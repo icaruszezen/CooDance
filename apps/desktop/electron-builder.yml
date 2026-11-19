@@ -49,15 +49,14 @@ mac:
       arch:
         - arm64
         - x64
-    - target: zip
-      arch:
-        - arm64
-        - x64
   darkModeSupport: true
 dmg:
   title: CooDance Studio
+  format: ULFO
+  writeUpdateInfo: false
 win:
   icon: build-resources/icon.png
+  artifactName: CooDance-Studio-${version}-win-${arch}-portable.${ext}
   files:
     - "!**/node_modules/ffprobe-static/bin/darwin/**"
     - "!**/node_modules/ffprobe-static/bin/linux/**"
@@ -66,7 +65,7 @@ win:
     - target: nsis
       arch:
         - x64
-    - target: portable
+    - target: zip
       arch:
         - x64
 nsis:
@@ -75,8 +74,8 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-portable:
-  artifactName: CooDance-Studio-${version}-win-${arch}-portable.${ext}
+  differentialPackage: false
+  useZip: true
 linux:
   icon: build-resources/icon.png
   artifactName: CooDance-Studio-${version}-linux-${arch}.${ext}

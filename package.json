@@ -20,6 +20,8 @@
     "desktop:dev": "npm run dev --workspace=@coodance/desktop",
     "desktop:build:win": "npm run build && npm run package:win --workspace=@coodance/desktop",
     "desktop:build:mac": "npm run build && npm run package:mac --workspace=@coodance/desktop",
+    "desktop:build:mac:arm64": "npm run build && npm run package:mac:arm64 --workspace=@coodance/desktop",
+    "desktop:build:mac:x64": "npm run build && npm run package:mac:x64 --workspace=@coodance/desktop",
     "desktop:build:linux": "npm run build && npm run package:linux --workspace=@coodance/desktop",
     "init-project": "node scripts/init-project.mjs",
     "tts": "node scripts/tts.mjs",

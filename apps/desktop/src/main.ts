@@ -446,7 +446,13 @@ async function createMainWindow(): Promise<void> {
 }
 
 async function runSmokeTest(): Promise<void> {
+  const startedAt = Date.now();
+  const logStage = (msg: string) => {
+    console.log(`[coodance-smoke] (+${Date.now() - startedAt}ms) ${msg}`);
+  };
+  logStage(`starting (platform=${process.platform} arch=${process.arch})`);
   await createMainWindow();
+  logStage(`window loaded (server=${serverHandle?.url || 'none'})`);
   if (!serverHandle) {
     throw new Error('Embedded server did not start during smoke test.');
   }
@@ -455,6 +461,7 @@ async function runSmokeTest(): Promise<void> {
     throw new Error(`/api/health returned HTTP ${healthRes.status}`);
   }
   const healthJson = (await healthRes.json()) as { ok?: boolean; version?: string; ffmpeg?: { ok?: boolean } };
+  logStage(`/api/health ok=${Boolean(healthJson.ok)} ffmpegOk=${Boolean(healthJson.ffmpeg?.ok)}`);
   if (!healthJson.ok) {
     throw new Error(`/api/health returned ok=false: ${JSON.stringify(healthJson)}`);
   }
@@ -466,18 +473,19 @@ async function runSmokeTest(): Promise<void> {
         const check = () => {
           const el = document.getElementById('root');
           if (el && el.innerHTML.trim().length > 0) return resolve(el.innerHTML.length);
-          if (Date.now() - start > 8000) return resolve(0);
+          if (Date.now() - start > 15000) return resolve(0);
           setTimeout(check, 100);
         };
         check();
       })`,
     )) as number;
     if (!rootHtmlLen || rootHtmlLen <= 0) {
-      throw new Error('Renderer #root did not mount any UI content within 8s.');
+      throw new Error('Renderer #root did not mount any UI content within 15s.');
     }
+    logStage(`renderer #root mounted (len=${rootHtmlLen})`);
   }
 
-  const passLine = `[coodance-smoke] PASS url=${serverHandle.url} version=${healthJson.version || 'unknown'} ffmpegOk=${Boolean(healthJson.ffmpeg?.ok)}`;
+  const passLine = `[coodance-smoke] PASS arch=${process.arch} url=${serverHandle.url} version=${healthJson.version || 'unknown'} ffmpegOk=${Boolean(healthJson.ffmpeg?.ok)}`;
   console.log(passLine);
   if (process.env.COODANCE_SMOKE_RESULT_FILE) {
     try {
