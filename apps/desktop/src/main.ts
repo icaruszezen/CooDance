@@ -317,7 +317,14 @@ async function runSmokeTest(): Promise<void> {
       // non-fatal
     }
   }
-  await serverHandle.close();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.destroy();
+    mainWindow = null;
+  }
+  await Promise.race([
+    serverHandle.close().catch(() => {}),
+    new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+  ]);
   serverHandle = null;
   app.exit(0);
 }

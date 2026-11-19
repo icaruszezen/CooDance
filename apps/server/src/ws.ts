@@ -127,11 +127,24 @@ export class StudioEventHub {
     for (const t of this.debounceTimers.values()) clearTimeout(t);
     this.debounceTimers.clear();
     if (this.watcher) {
-      await this.watcher.close();
+      await Promise.race([
+        this.watcher.close(),
+        new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+      ]);
       this.watcher = null;
     }
-    await new Promise<void>((resolve) => {
-      this.wss.close(() => resolve());
-    });
+    for (const client of this.wss.clients) {
+      try {
+        client.terminate();
+      } catch {
+        // ignore
+      }
+    }
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        this.wss.close(() => resolve());
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+    ]);
   }
 }

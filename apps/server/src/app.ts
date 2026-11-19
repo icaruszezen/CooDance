@@ -1023,9 +1023,16 @@ export async function startStudioServer(
       if (studioProc && !studioProc.killed) {
         studioProc.kill();
       }
-      await mcpHttp.close();
-      await hub.close();
-      await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+      await mcpHttp.close().catch(() => {});
+      await hub.close().catch(() => {});
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          httpServer.close(() => resolve());
+          httpServer.closeIdleConnections?.();
+          httpServer.closeAllConnections?.();
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+      ]);
     },
   };
 }
