@@ -1,6 +1,6 @@
 {
   "name": "@coodance/desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CooDance Desktop Studio for Windows and macOS",
   "author": "CooDance Contributors",
   "main": "./dist/main.js",
@@ -13,6 +13,8 @@
     "package:linux": "electron-builder --config electron-builder.yml --linux"
   },
   "dependencies": {
+    "@coodance/core": "*",
+    "@coodance/mcp": "*",
     "@coodance/server": "*"
   },
   "devDependencies": {

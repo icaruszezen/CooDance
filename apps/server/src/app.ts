@@ -8,28 +8,37 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import {
+  AgentClientId,
   AppSettings,
   AssetsManifest,
   AudioTimeline,
   EditPlan,
+  ImportAssetOptions,
+  InstallAgentOptions,
   LOTTIE_PRESETS,
+  RenderJobManager,
   SFX_PRESETS,
   SfxPresetId,
   buildAgentContextPrompt,
+  buildSkillZipBuffer,
   checkFfmpegHealth,
   createProjectSnapshot,
   fetchAndSaveLogo,
   fetchAndSaveLottie,
   generateAiEditPlan,
   generateProjectSfx,
+  getAgentIntegrationInfo,
   getProjectSummary,
   getSnapshotDiff,
+  importProjectAsset,
   initProject,
   inspectProjectAssets,
+  installAgentIntegration,
   listProjectSnapshots,
   listProjects,
   loadSettings,
   maskSettingsForClient,
+  readSkillBundleFiles,
   renderProjectVideo,
   resolveProjectPaths,
   resolveRemotionPackageDir,
@@ -40,7 +49,14 @@ import {
   searchLocalLogos,
   seedDemoProject,
   syncProjectForRemotionStudio,
+  uninstallAgentIntegration,
+  validateEditPlan,
 } from '@coodance/core';
+import {
+  COODANCE_MCP_RESOURCES_CATALOG,
+  COODANCE_MCP_TOOLS_CATALOG,
+  mountCoodanceMcpHttp,
+} from '@coodance/mcp';
 import { StudioEventHub } from './ws.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,6 +67,12 @@ export interface StartServerOptions {
   host?: string;
   staticWebDir?: string;
   workspaceDirOverride?: string;
+  isDesktop?: boolean;
+  fixedPortRequested?: number | null;
+  portFallbackReason?: string;
+  electronExecutablePath?: string;
+  mcpStdioScriptPath?: string;
+  skillSourceDir?: string;
 }
 
 export interface RunningStudioServer {
@@ -110,26 +132,51 @@ export async function startStudioServer(
   const httpServer = http.createServer(app);
   const hub = new StudioEventHub(httpServer, () => settings.security.webAccessToken || '');
   hub.watchWorkspace(settings.workspaceDir);
+  const renderJobManager = new RenderJobManager();
 
   let studioProc: ChildProcess | null = null;
+  let actualPortRef = 0;
+  let defaultServerUrlRef = '';
 
-  app.use(cors());
-  app.use(express.json({ limit: '20mb' }));
+  app.use(
+    cors({
+      exposedHeaders: ['Mcp-Session-Id'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'x-coodance-token',
+        'Mcp-Session-Id',
+        'MCP-Protocol-Version',
+        'Last-Event-ID',
+      ],
+    }),
+  );
+  app.use(express.json({ limit: '50mb' }));
 
-  // Optional access token middleware for self-hosted Web mode
-  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  const isAuthorizedRequest = (req: Request): boolean => {
     const required = settings.security.webAccessToken;
-    if (!required || req.path === '/health') {
-      next();
-      return;
-    }
+    if (!required) return true;
     const authHeader = req.headers.authorization || '';
     const headerToken = authHeader.startsWith('Bearer ')
       ? authHeader.slice(7).trim()
       : String(req.headers['x-coodance-token'] || '');
     const queryToken = typeof req.query.token === 'string' ? req.query.token : '';
+    return headerToken === required || queryToken === required;
+  };
 
-    if (headerToken === required || queryToken === required) {
+  // Mount Streamable HTTP MCP endpoint (/mcp) sharing settings, auth, render jobs, and live WS progress
+  const mcpHttp = mountCoodanceMcpHttp(app, {
+    path: '/mcp',
+    getSettings: () => settings,
+    renderJobManager,
+    isEnabled: () => settings.mcp.enabled,
+    authorize: isAuthorizedRequest,
+    onProgress: (ev) => hub.emitProgress(ev),
+  });
+
+  // Optional access token middleware for self-hosted Web mode
+  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path === '/health' || isAuthorizedRequest(req)) {
       next();
       return;
     }
@@ -141,11 +188,16 @@ export async function startStudioServer(
     const ffmpeg = await checkFfmpegHealth(settings.ffmpeg);
     res.json({
       ok: true,
-      version: '1.0.0',
+      version: '1.1.0',
       platform: process.platform,
       nodeVersion: process.version,
       workspaceDir: settings.workspaceDir,
       authRequired: Boolean(settings.security.webAccessToken),
+      mcp: {
+        enabled: settings.mcp.enabled,
+        endpoint: '/mcp',
+        activeSessions: mcpHttp.getActiveSessionCount(),
+      },
       ffmpeg,
     });
   });
@@ -525,7 +577,40 @@ export async function startStudioServer(
     }
   });
 
-  // 6. Stage 4: Edit Plan & AI Storyboard Assistant
+  // 5b. Unified External Asset Import (localPath / url / base64 / text SVG or JSON)
+  app.post('/api/projects/:slug/assets/import', async (req, res) => {
+    try {
+      const paths = resolveProjectPaths(settings.workspaceDir, req.params.slug);
+      const imported = await importProjectAsset(paths, req.body as ImportAssetOptions, settings.ffmpeg);
+      res.status(201).json(imported);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  // 6. Stage 4: Edit Plan Validation, Persistence & AI Storyboard Assistant
+  app.post('/api/projects/:slug/edit-plan/validate', (req, res) => {
+    try {
+      const paths = resolveProjectPaths(settings.workspaceDir, req.params.slug);
+      const { editPlan, rawJson } = (req.body || {}) as { editPlan?: unknown; rawJson?: string };
+      let candidate: unknown;
+      if (typeof rawJson === 'string') {
+        candidate = JSON.parse(rawJson);
+      } else if (editPlan !== undefined) {
+        candidate = editPlan;
+      } else if (fs.existsSync(paths.editPlanFile)) {
+        candidate = JSON.parse(fs.readFileSync(paths.editPlanFile, 'utf8'));
+      } else {
+        res.status(404).json({ error: 'edit_plan.json not found' });
+        return;
+      }
+      const validation = validateEditPlan(paths, candidate);
+      res.json(validation);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   app.put('/api/projects/:slug/edit-plan', (req, res) => {
     try {
       const paths = resolveProjectPaths(settings.workspaceDir, req.params.slug);
@@ -595,7 +680,7 @@ export async function startStudioServer(
     }
   });
 
-  // 7. Stage 5: Remotion Studio Sync & Video Rendering
+  // 7. Stage 5: Remotion Studio Sync & Video Rendering (Sync + Async Jobs)
   app.post('/api/projects/:slug/sync-studio', (req, res) => {
     try {
       const paths = resolveProjectPaths(settings.workspaceDir, req.params.slug);
@@ -670,6 +755,57 @@ export async function startStudioServer(
     }
   });
 
+  app.post('/api/projects/:slug/render/async', (req, res) => {
+    try {
+      const paths = resolveProjectPaths(settings.workspaceDir, req.params.slug);
+      const { preset, outputName, crf, autoSnapshot } = (req.body || {}) as {
+        preset?: 'production' | 'draft';
+        outputName?: string;
+        crf?: number;
+        autoSnapshot?: boolean;
+      };
+      const job = renderJobManager.startRenderJob(
+        paths,
+        { preset, outputName, crf, autoSnapshot },
+        (j, stage, progress, message) => {
+          hub.emitProgress({
+            jobId: j.jobId,
+            projectSlug: paths.slug,
+            kind: 'render',
+            stage,
+            progress,
+            message,
+            level: stage === 'done' ? 'success' : stage === 'error' ? 'error' : 'info',
+          });
+        },
+      );
+      res.status(202).json({ job });
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.get('/api/projects/:slug/render/jobs', (req, res) => {
+    try {
+      const paths = resolveProjectPaths(settings.workspaceDir, req.params.slug);
+      const jobs = renderJobManager.listJobs(paths.slug, paths);
+      res.json({ jobs });
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.get('/api/render-jobs/:jobId', (req, res) => {
+    const slug = typeof req.query.slug === 'string' ? req.query.slug : undefined;
+    const projectPaths = slug ? resolveProjectPaths(settings.workspaceDir, slug) : undefined;
+    const job = renderJobManager.getJob(req.params.jobId, projectPaths);
+    if (!job) {
+      res.status(404).json({ error: 'Render job not found' });
+      return;
+    }
+    res.json({ job });
+  });
+
   // 8. Git Snapshots & Full / Single-File Rollback
   app.get('/api/projects/:slug/snapshots', async (req, res) => {
     try {
@@ -710,6 +846,88 @@ export async function startStudioServer(
       const restored = await restoreProjectSnapshot(paths, req.params.tag, filePath);
       const snapshots = await listProjectSnapshots(paths);
       res.json({ restored, snapshots });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  // 8b. External AI Agent Integration Hub (MCP + Skill Discovery, Export & One-Click Installer)
+  const buildAgentCtx = (req: Request) => {
+    const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+    const proto = forwardedProto || req.protocol || 'http';
+    const hostHeader = req.get('host');
+    const httpBaseUrl = hostHeader ? `${proto}://${hostHeader}` : defaultServerUrlRef;
+    return {
+      settings,
+      httpBaseUrl,
+      actualPort: actualPortRef,
+      fixedPortRequested: options.fixedPortRequested ?? null,
+      portFallbackReason: options.portFallbackReason,
+      isDesktop: options.isDesktop,
+      electronExecutablePath: options.electronExecutablePath,
+      mcpStdioScriptPath: options.mcpStdioScriptPath,
+      skillSourceDir: options.skillSourceDir,
+    };
+  };
+
+  app.get('/api/agent/info', (req, res) => {
+    try {
+      const info = getAgentIntegrationInfo(buildAgentCtx(req));
+      res.json({
+        info,
+        activeMcpSessions: mcpHttp.getActiveSessionCount(),
+        toolsCatalog: COODANCE_MCP_TOOLS_CATALOG,
+        resourcesCatalog: COODANCE_MCP_RESOURCES_CATALOG,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post('/api/agent/install', (req, res) => {
+    try {
+      const result = installAgentIntegration(buildAgentCtx(req), req.body as InstallAgentOptions);
+      const info = getAgentIntegrationInfo(buildAgentCtx(req));
+      res.json({ result, info });
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post('/api/agent/uninstall', (req, res) => {
+    try {
+      const { clientId, removeMcp, removeSkill } = req.body as {
+        clientId: AgentClientId;
+        removeMcp?: boolean;
+        removeSkill?: boolean;
+      };
+      const result = uninstallAgentIntegration(clientId, { removeMcp, removeSkill });
+      const info = getAgentIntegrationInfo(buildAgentCtx(req));
+      res.json({ result, info });
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.get('/api/agent/skill/files', (_req, res) => {
+    try {
+      const bundle = readSkillBundleFiles(options.skillSourceDir);
+      res.json(bundle);
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.get('/api/agent/skill.zip', (_req, res) => {
+    try {
+      const zipBuf = buildSkillZipBuffer(options.skillSourceDir);
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="coodance-video-producer-skill.zip"',
+      );
+      res.setHeader('Content-Length', String(zipBuf.length));
+      res.send(zipBuf);
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
     }
@@ -770,7 +988,12 @@ export async function startStudioServer(
   if (webDist && fs.existsSync(webDist)) {
     app.use(express.static(webDist));
     app.get('*spaFallback', (req, res, next) => {
-      if (req.path.startsWith('/api/') || req.path.startsWith('/ws')) {
+      if (
+        req.path.startsWith('/api/') ||
+        req.path.startsWith('/ws') ||
+        req.path === '/mcp' ||
+        req.path.startsWith('/mcp/')
+      ) {
         next();
         return;
       }
@@ -789,6 +1012,8 @@ export async function startStudioServer(
   const addr = httpServer.address();
   const actualPort = typeof addr === 'object' && addr ? addr.port : port;
   const url = `http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${actualPort}`;
+  actualPortRef = actualPort;
+  defaultServerUrlRef = url;
 
   return {
     port: actualPort,
@@ -798,6 +1023,7 @@ export async function startStudioServer(
       if (studioProc && !studioProc.killed) {
         studioProc.kill();
       }
+      await mcpHttp.close();
       await hub.close();
       await new Promise<void>((resolve) => httpServer.close(() => resolve()));
     },

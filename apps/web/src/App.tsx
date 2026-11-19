@@ -12,6 +12,7 @@ import {
   Clapperboard,
   FolderOpen,
   Radio,
+  Bot,
 } from 'lucide-react';
 import {
   FfmpegHealthDto,
@@ -30,6 +31,7 @@ import { AssetInspectorView } from './components/AssetInspectorView';
 import { StoryboardStudioView } from './components/StoryboardStudioView';
 import { RenderSnapshotsView } from './components/RenderSnapshotsView';
 import { SettingsModal } from './components/SettingsModal';
+import { AgentHubModal } from './components/AgentHubModal';
 
 type StageTab = 'script' | 'assets' | 'storyboard' | 'render';
 
@@ -49,6 +51,7 @@ export const App: React.FC = () => {
   const [tokenInput, setTokenInput] = useState('');
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showAgentHub, setShowAgentHub] = useState(false);
   const [busyDemo, setBusyDemo] = useState(false);
   const [liveProgress, setLiveProgress] = useState<ProgressEventDto | null>(null);
   const [renderLogs, setRenderLogs] = useState<ProgressEventDto[]>([]);
@@ -294,6 +297,16 @@ export const App: React.FC = () => {
         </nav>
 
         <div className="topbar-actions">
+          <button
+            id="btn-open-agent-hub"
+            type="button"
+            className="btn btn-sm topbar-agent-btn"
+            onClick={() => setShowAgentHub(true)}
+          >
+            <Bot size={13} />
+            {t(lang, 'agentHub')}
+          </button>
+
           {activeSlug ? (
             <button
               id="btn-quick-snapshot"
@@ -507,6 +520,18 @@ export const App: React.FC = () => {
           ffmpeg={ffmpeg}
           onClose={() => setShowSettings(false)}
           onSave={handleSaveSettings}
+        />
+      ) : null}
+
+      {/* External AI Agent Hub (MCP + Skill) Modal */}
+      {showAgentHub && settings ? (
+        <AgentHubModal
+          lang={lang}
+          settings={settings}
+          activeProjectSlug={activeSlug}
+          onClose={() => setShowAgentHub(false)}
+          onSaveSettings={handleSaveSettings}
+          onNotify={notify}
         />
       ) : null}
     </div>

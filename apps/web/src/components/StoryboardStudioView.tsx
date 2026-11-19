@@ -27,8 +27,9 @@ import {
   ExternalLink,
   Check,
   SkipBack,
+  ShieldCheck,
 } from 'lucide-react';
-import { ProjectWorkspaceDto, apiRequest } from '../api';
+import { EditPlanValidationResultDto, ProjectWorkspaceDto, apiRequest } from '../api';
 import { UiLang, t } from '../i18n';
 
 interface StoryboardStudioViewProps {
@@ -257,6 +258,37 @@ export const StoryboardStudioView: React.FC<StoryboardStudioViewProps> = ({
           : 'Copied external AI Agent context prompt to clipboard',
         'success',
       );
+    } catch (err) {
+      onNotify(err instanceof Error ? err.message : String(err), 'error');
+    }
+  };
+
+  const handleValidatePlan = async () => {
+    if (!plan) return;
+    try {
+      const res = await apiRequest<EditPlanValidationResultDto>(
+        `/api/projects/${encodeURIComponent(workspace.summary.slug)}/edit-plan/validate`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ editPlan: plan }),
+        },
+      );
+      if (res.valid) {
+        onNotify(
+          lang === 'zh-CN'
+            ? `✔ 分镜校验通过（${res.summary.sceneCount} 镜 / ${res.summary.planDurationSec}s，${res.warnings.length} 条提示）`
+            : `✔ EditPlan valid (${res.summary.sceneCount} scenes / ${res.summary.planDurationSec}s, ${res.warnings.length} warnings)`,
+          'success',
+        );
+      } else {
+        const first = res.errors[0];
+        onNotify(
+          lang === 'zh-CN'
+            ? `✘ 分镜存在 ${res.errors.length} 处错误：${first?.message || ''}`
+            : `✘ Validation failed (${res.errors.length} errors): ${first?.message || ''}`,
+          'error',
+        );
+      }
     } catch (err) {
       onNotify(err instanceof Error ? err.message : String(err), 'error');
     }
@@ -530,6 +562,15 @@ export const StoryboardStudioView: React.FC<StoryboardStudioViewProps> = ({
               >
                 {copiedAgent ? <Check size={12} /> : <Copy size={12} />}
                 {copiedAgent ? 'OK' : t(lang, 'copyAgentPrompt')}
+              </button>
+              <button
+                id="btn-validate-editplan"
+                type="button"
+                className="btn btn-sm"
+                onClick={() => void handleValidatePlan()}
+              >
+                <ShieldCheck size={12} />
+                {t(lang, 'validatePlan')}
               </button>
               <button
                 type="button"
