@@ -120,7 +120,7 @@ jobs:
           - **Web / Docker 自托管**：执行 `docker compose up -d` 或 `npm ci && npm run build && npm start` 即可部署个人/私有 Web 工作台。
 
           ### 下载说明
-          - **Windows (x64)**：`*-win-x64-nsis.exe`（安装版）或 `*-win-x64-portable.exe`（免安装便携版）
+          - **Windows (x64)**：`*-win-x64-setup.exe`（安装版）或 `*-win-x64-portable.exe`（免安装便携版）
           - **macOS (Apple Silicon / Intel)**：`*-mac-arm64.dmg`（M 系列芯片）或 `*-mac-x64.dmg`（Intel 芯片）
           - **校验文件**：`SHA256SUMS.txt`
           EOF

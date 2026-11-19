@@ -2,6 +2,7 @@
   "name": "@coodance/desktop",
   "version": "1.0.0",
   "description": "CooDance Desktop Studio for Windows and macOS",
+  "author": "CooDance Contributors",
   "main": "./dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",

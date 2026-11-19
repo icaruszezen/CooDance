@@ -1,6 +1,7 @@
 appId: app.coodance.studio
 productName: CooDance Studio
 copyright: Copyright © 2026 CooDance Contributors
+electronVersion: "35.7.5"
 npmRebuild: false
 publish: null
 directories:
@@ -42,7 +43,6 @@ dmg:
   title: CooDance Studio
 win:
   icon: build-resources/icon.png
-  artifactName: CooDance-Studio-${version}-win-${arch}-${target}.${ext}
   target:
     - target: nsis
       arch:
@@ -51,10 +51,13 @@ win:
       arch:
         - x64
 nsis:
+  artifactName: CooDance-Studio-${version}-win-${arch}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+portable:
+  artifactName: CooDance-Studio-${version}-win-${arch}-portable.${ext}
 linux:
   icon: build-resources/icon.png
   artifactName: CooDance-Studio-${version}-linux-${arch}.${ext}
