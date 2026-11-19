@@ -1,6 +1,6 @@
 {
   "name": "@coodance/desktop",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "CooDance Desktop Studio for Windows and macOS",
   "author": "CooDance Contributors",
   "main": "./dist/main.js",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@coodance/core": "*",
     "@coodance/mcp": "*",
+    "@coodance/remotion": "*",
     "@coodance/server": "*"
   },
   "devDependencies": {

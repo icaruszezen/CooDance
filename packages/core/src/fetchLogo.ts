@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import * as simpleIcons from 'simple-icons';
 import { ProjectPaths, ensureProjectDirs, toPosixPath } from './paths.js';
 
 const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface LogoCatalogEntry {
   id: string;
@@ -29,6 +31,15 @@ interface SimpleIconLike {
   svg: string;
 }
 
+function getBundledUnpackedNodeModulesDirs(): string[] {
+  const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath || '';
+  const candidates = [
+    resourcesPath ? path.join(resourcesPath, 'app.asar.unpacked', 'node_modules') : '',
+    path.resolve(__dirname, '../app.asar.unpacked/node_modules'),
+  ].filter(Boolean);
+  return candidates.filter((dir) => fs.existsSync(dir));
+}
+
 let cachedLobeDir: string | null = null;
 function getLobeIconsDir(): string | null {
   if (cachedLobeDir !== null) return cachedLobeDir || null;
@@ -42,11 +53,39 @@ function getLobeIconsDir(): string | null {
   } catch {
     // ignore
   }
+  for (const nmDir of getBundledUnpackedNodeModulesDirs()) {
+    const iconsDir = path.join(nmDir, '@lobehub', 'icons-static-svg', 'icons');
+    if (fs.existsSync(iconsDir)) {
+      cachedLobeDir = iconsDir;
+      return iconsDir;
+    }
+  }
   cachedLobeDir = '';
   return null;
 }
 
+function loadSimpleIconsModule(): Record<string, unknown> | null {
+  try {
+    return require('simple-icons') as Record<string, unknown>;
+  } catch {
+    // Fall back to app.asar.unpacked when invoked from standalone resources/mcp/stdio.mjs
+  }
+  for (const nmDir of getBundledUnpackedNodeModulesDirs()) {
+    const entry = path.join(nmDir, 'simple-icons', 'index.js');
+    if (fs.existsSync(entry)) {
+      try {
+        return require(entry) as Record<string, unknown>;
+      } catch {
+        // continue
+      }
+    }
+  }
+  return null;
+}
+
 function getAllSimpleIcons(): SimpleIconLike[] {
+  const simpleIcons = loadSimpleIconsModule();
+  if (!simpleIcons) return [];
   const list: SimpleIconLike[] = [];
   for (const val of Object.values(simpleIcons)) {
     if (val && typeof val === 'object' && 'slug' in val && 'svg' in val && 'title' in val) {

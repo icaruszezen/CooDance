@@ -2,8 +2,6 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bundle } from '@remotion/bundler';
-import { renderMedia, selectComposition } from '@remotion/renderer';
 import { AudioTimeline, EditPlan, RenderOptions, RenderResult } from './types.js';
 import { ProjectPaths, ensureProjectDirs, resolveSafeProjectFile, toPosixPath } from './paths.js';
 import { createProjectSnapshot } from './snapshot.js';
@@ -234,10 +232,38 @@ export async function renderProjectVideo(
   process.env.no_proxy = nextNoProxy;
 
   try {
+    const [{ bundle }, { renderMedia, selectComposition }] = await Promise.all([
+      import('@remotion/bundler'),
+      import('@remotion/renderer'),
+    ]);
+
     if (!cachedBundleLocation || !fs.existsSync(cachedBundleLocation)) {
       onProgress?.('bundle', 0.12, '正在编译 Remotion 视频合成工程...');
+      const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+      const extraModuleDirs = [
+        resourcesPath ? path.join(resourcesPath, 'app.asar.unpacked', 'node_modules') : '',
+        resourcesPath ? path.join(resourcesPath, 'app.asar', 'node_modules') : '',
+      ].filter((dir) => Boolean(dir) && fs.existsSync(dir));
+
       cachedBundleLocation = await bundle({
         entryPoint,
+        webpackOverride: (currentConfig) => {
+          if (extraModuleDirs.length === 0) return currentConfig;
+          return {
+            ...currentConfig,
+            resolve: {
+              ...currentConfig.resolve,
+              modules: [...(currentConfig.resolve?.modules || ['node_modules']), ...extraModuleDirs],
+            },
+            resolveLoader: {
+              ...currentConfig.resolveLoader,
+              modules: [
+                ...(currentConfig.resolveLoader?.modules || ['node_modules']),
+                ...extraModuleDirs,
+              ],
+            },
+          };
+        },
         onProgress: (p) => {
           onProgress?.('bundle', 0.12 + (p / 100) * 0.18, `打包合成组件 ${Math.round(p)}%`);
         },

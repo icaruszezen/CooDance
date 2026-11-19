@@ -1,6 +1,6 @@
 {
   "name": "@coodance/mcp",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "description": "CooDance MCP Server (dual-transport stdio + Streamable HTTP) for external AI agents",
   "main": "./dist/index.js",
@@ -23,7 +23,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/bundle-stdio.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start:stdio": "node dist/stdio.js"
   },

@@ -188,7 +188,7 @@ export async function startStudioServer(
     const ffmpeg = await checkFfmpegHealth(settings.ffmpeg);
     res.json({
       ok: true,
-      version: '1.1.0',
+      version: '1.1.1',
       platform: process.platform,
       nodeVersion: process.version,
       workspaceDir: settings.workspaceDir,

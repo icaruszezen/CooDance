@@ -1,10 +1,14 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface FfmpegBinaries {
   ffmpeg: string;
@@ -29,6 +33,33 @@ function isExecutableFile(filePath: string | undefined | null): filePath is stri
   } catch {
     return false;
   }
+}
+
+function getUnpackedNodeModulesCandidates(): string[] {
+  const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath || '';
+  return [
+    resourcesPath ? path.join(resourcesPath, 'app.asar.unpacked', 'node_modules') : '',
+    path.resolve(__dirname, '../app.asar.unpacked/node_modules'),
+  ].filter((dir) => Boolean(dir) && fs.existsSync(dir));
+}
+
+function tryLoadStaticModule<T>(pkgName: string): T | null {
+  try {
+    return require(pkgName) as T;
+  } catch {
+    // Fall back to app.asar.unpacked when executed from bundled resources/mcp/stdio.mjs
+  }
+  for (const nmDir of getUnpackedNodeModulesCandidates()) {
+    const pkgEntry = path.join(nmDir, pkgName, 'index.js');
+    if (fs.existsSync(pkgEntry)) {
+      try {
+        return require(pkgEntry) as T;
+      } catch {
+        // continue
+      }
+    }
+  }
+  return null;
 }
 
 export function resolveFfmpegBinaries(custom?: {
@@ -56,23 +87,15 @@ export function resolveFfmpegBinaries(custom?: {
   // 3. Bundled static binaries (Electron / cross-platform zero-config)
   let bundledFfmpeg: string | null = null;
   let bundledFfprobe: string | null = null;
-  try {
-    const mod = require('ffmpeg-static') as string | null;
-    if (typeof mod === 'string') {
-      const candidate = fixAsarUnpacked(mod);
-      if (isExecutableFile(candidate)) bundledFfmpeg = candidate;
-    }
-  } catch {
-    // ignore if optional
+  const ffmpegMod = tryLoadStaticModule<string | null>('ffmpeg-static');
+  if (typeof ffmpegMod === 'string') {
+    const candidate = fixAsarUnpacked(ffmpegMod);
+    if (isExecutableFile(candidate)) bundledFfmpeg = candidate;
   }
-  try {
-    const mod = require('ffprobe-static') as { path?: string } | null;
-    if (mod?.path) {
-      const candidate = fixAsarUnpacked(mod.path);
-      if (isExecutableFile(candidate)) bundledFfprobe = candidate;
-    }
-  } catch {
-    // ignore if optional
+  const ffprobeMod = tryLoadStaticModule<{ path?: string } | null>('ffprobe-static');
+  if (ffprobeMod?.path) {
+    const candidate = fixAsarUnpacked(ffprobeMod.path);
+    if (isExecutableFile(candidate)) bundledFfprobe = candidate;
   }
 
   if (bundledFfmpeg && bundledFfprobe) {
@@ -113,6 +136,21 @@ export async function runFfprobe(
   });
 }
 
+interface CachedHealthResult {
+  key: string;
+  expiresAt: number;
+  value: {
+    ok: boolean;
+    source: FfmpegBinaries['source'];
+    ffmpegPath: string;
+    ffprobePath: string;
+    ffmpegVersion?: string;
+    error?: string;
+  };
+}
+
+let cachedHealth: CachedHealthResult | null = null;
+
 export async function checkFfmpegHealth(custom?: {
   ffmpegPath?: string;
   ffprobePath?: string;
@@ -125,17 +163,26 @@ export async function checkFfmpegHealth(custom?: {
   error?: string;
 }> {
   const bins = resolveFfmpegBinaries(custom);
+  const cacheKey = `${bins.source}|${bins.ffmpeg}|${bins.ffprobe}`;
+  if (cachedHealth && cachedHealth.key === cacheKey && Date.now() < cachedHealth.expiresAt) {
+    return cachedHealth.value;
+  }
+
   try {
-    const { stdout } = await execFileAsync(bins.ffmpeg, ['-version'], { windowsHide: true });
-    await execFileAsync(bins.ffprobe, ['-version'], { windowsHide: true });
+    const [{ stdout }] = await Promise.all([
+      execFileAsync(bins.ffmpeg, ['-version'], { windowsHide: true }),
+      execFileAsync(bins.ffprobe, ['-version'], { windowsHide: true }),
+    ]);
     const firstLine = stdout.split(/\r?\n/)[0]?.trim() || 'ffmpeg available';
-    return {
+    const value = {
       ok: true,
       source: bins.source,
       ffmpegPath: bins.ffmpeg,
       ffprobePath: bins.ffprobe,
       ffmpegVersion: firstLine,
     };
+    cachedHealth = { key: cacheKey, expiresAt: Date.now() + 60_000, value };
+    return value;
   } catch (err) {
     return {
       ok: false,

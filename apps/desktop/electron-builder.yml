@@ -10,6 +10,11 @@ directories:
 files:
   - dist/**/*
   - package.json
+  - "!**/node_modules/simple-icons/icons/**"
+  - "!**/node_modules/simple-icons/data/**"
+  - "!**/node_modules/simple-icons/index.mjs"
+  - "!**/node_modules/@coodance/*/src/**"
+  - "!**/node_modules/**/*.map"
 extraResources:
   - from: ../web/dist
     to: apps/web/dist
@@ -17,6 +22,8 @@ extraResources:
     to: packages/remotion/src
   - from: ../../packages/remotion/package.json
     to: packages/remotion/package.json
+  - from: ../../packages/mcp/dist/stdio.bundle.mjs
+    to: mcp/stdio.mjs
   - from: ../../skills/coodance-video-producer
     to: skills/coodance-video-producer
 asar: true
@@ -26,21 +33,17 @@ asarUnpack:
   - "**/@remotion/compositor-*/**"
   - "**/@remotion/bundler/**"
   - "**/@remotion/renderer/**"
-  - "**/@coodance/mcp/**"
-  - "**/@coodance/core/**"
-  - "**/@modelcontextprotocol/**"
-  - "**/zod/**"
-  - "**/zod-to-json-schema/**"
-  - "**/ajv/**"
-  - "**/ajv-formats/**"
-  - "**/simple-icons/**"
-  - "**/@lobehub/icons-static-svg/**"
-  - "**/ws/**"
+  - "**/@esbuild/**"
+  - "**/simple-icons/index.js"
+  - "**/simple-icons/package.json"
 mac:
   category: public.app-category.video
   icon: build-resources/icon.png
   identity: null
   artifactName: CooDance-Studio-${version}-mac-${arch}.${ext}
+  files:
+    - "!**/node_modules/ffprobe-static/bin/win32/**"
+    - "!**/node_modules/ffprobe-static/bin/linux/**"
   target:
     - target: dmg
       arch:
@@ -55,6 +58,10 @@ dmg:
   title: CooDance Studio
 win:
   icon: build-resources/icon.png
+  files:
+    - "!**/node_modules/ffprobe-static/bin/darwin/**"
+    - "!**/node_modules/ffprobe-static/bin/linux/**"
+    - "!**/node_modules/ffprobe-static/bin/win32/ia32/**"
   target:
     - target: nsis
       arch:
@@ -73,6 +80,10 @@ portable:
 linux:
   icon: build-resources/icon.png
   artifactName: CooDance-Studio-${version}-linux-${arch}.${ext}
+  files:
+    - "!**/node_modules/ffprobe-static/bin/darwin/**"
+    - "!**/node_modules/ffprobe-static/bin/win32/**"
+    - "!**/node_modules/ffprobe-static/bin/linux/ia32/**"
   target:
     - AppImage
   category: AudioVideo
