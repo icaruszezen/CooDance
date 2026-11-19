@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "npm run build --workspace=@coodance/core && npm run build --workspace=@coodance/remotion && npm run build --workspace=@coodance/server && npm run build --workspace=@coodance/web && npm run build --workspace=@coodance/desktop",
-    "typecheck": "npm run typecheck --workspace=@coodance/core && npm run typecheck --workspace=@coodance/remotion && npm run typecheck --workspace=@coodance/server && npm run typecheck --workspace=@coodance/web && npm run typecheck --workspace=@coodance/desktop",
+    "typecheck": "npm run build --workspace=@coodance/core && npm run build --workspace=@coodance/remotion && npm run typecheck --workspace=@coodance/server && npm run typecheck --workspace=@coodance/web && npm run typecheck --workspace=@coodance/desktop",
     "dev:server": "npm run dev --workspace=@coodance/server",
     "dev:web": "npm run dev --workspace=@coodance/web",
     "start": "node apps/server/dist/index.js",
