@@ -85,8 +85,12 @@ jobs:
               ~/Library/Caches/electron
               ~/Library/Caches/electron-builder
           - label: macOS x64
-            os: macos-15-intel
-            cmd: npm run desktop:build:mac:x64
+            os: macos-latest
+            cmd: >-
+              npm run build &&
+              npm ci --no-audit --no-fund --cpu=x64 --ignore-scripts &&
+              npm_config_arch=x64 node node_modules/ffmpeg-static/install.js &&
+              npm run package:mac:x64 --workspace=@coodance/desktop
             artifact: CooDance-macOS-x64
             cache_paths: |
               ~/Library/Caches/electron
@@ -105,9 +109,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ matrix.cache_paths }}
-          key: electron-builder-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/electron-builder.yml', 'package-lock.json') }}
+          key: electron-builder-${{ matrix.artifact }}-${{ hashFiles('apps/desktop/electron-builder.yml', 'package-lock.json') }}
           restore-keys: |
-            electron-builder-${{ runner.os }}-${{ runner.arch }}-
+            electron-builder-${{ matrix.artifact }}-
       - name: Install dependencies
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
