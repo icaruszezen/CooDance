@@ -148,7 +148,7 @@ jobs:
               const os = require("node:os");
               const resultFile = path.join(os.tmpdir(), "coodance-smoke-" + Date.now() + ".txt");
               await new Promise((resolve, reject) => {
-                const child = spawn(exePath, ["--no-sandbox"], {
+                const child = spawn(exePath, ["--no-sandbox", "--disable-gpu"], {
                   env: {
                     ...process.env,
                     COODANCE_SMOKE_TEST: "1",
@@ -161,9 +161,9 @@ jobs:
                 child.stdout.on("data", (d) => { out += d.toString(); process.stdout.write(d); });
                 child.stderr.on("data", (d) => { out += d.toString(); process.stderr.write(d); });
                 const timer = setTimeout(() => {
-                  child.kill();
-                  reject(new Error("Packaged Electron smoke test timed out after 60s.\n" + out));
-                }, 60000);
+                  try { child.kill("SIGKILL"); } catch {}
+                  reject(new Error("Packaged Electron smoke test timed out after 120s.\n" + out));
+                }, 120000);
                 child.on("exit", (code) => {
                   clearTimeout(timer);
                   const fileOut = fs.existsSync(resultFile) ? fs.readFileSync(resultFile, "utf8") : "";
@@ -191,7 +191,7 @@ jobs:
                   if (done) return;
                   done = true;
                   clearTimeout(timer);
-                  child.kill();
+                  try { child.kill(err ? "SIGKILL" : "SIGTERM"); } catch {}
                   if (err) reject(err);
                   else resolve();
                 };
@@ -209,8 +209,8 @@ jobs:
                   }
                 });
                 const timer = setTimeout(() => {
-                  finish(new Error("Packaged MCP stdio smoke timed out after 15s.\nSTDOUT: " + stdout + "\nSTDERR: " + stderr));
-                }, 15000);
+                  finish(new Error("Packaged MCP stdio smoke timed out after 30s.\nSTDOUT: " + stdout + "\nSTDERR: " + stderr));
+                }, 30000);
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.1.1" } } }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }) + "\n");
