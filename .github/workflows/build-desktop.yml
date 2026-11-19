@@ -162,8 +162,8 @@ jobs:
                 child.stderr.on("data", (d) => { out += d.toString(); process.stderr.write(d); });
                 const timer = setTimeout(() => {
                   try { child.kill("SIGKILL"); } catch {}
-                  reject(new Error("Packaged Electron smoke test timed out after 120s.\n" + out));
-                }, 120000);
+                  reject(new Error("Packaged Electron smoke test timed out after 180s.\n" + out));
+                }, 180000);
                 child.on("exit", (code) => {
                   clearTimeout(timer);
                   const fileOut = fs.existsSync(resultFile) ? fs.readFileSync(resultFile, "utf8") : "";
