@@ -29,6 +29,10 @@ function buildSplashDataUrl(): string {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       display: flex; align-items: center; justify-content: center;
       user-select: none; overflow: hidden;
+      -webkit-app-region: drag;
+    }
+    body {
+      border: 1px solid rgba(255,255,255,0.08);
     }
     .card {
       display: flex; flex-direction: column; align-items: center; gap: 18px;
@@ -226,6 +230,66 @@ async function bootEmbeddedServer(): Promise<RunningServerHandle> {
   });
 }
 
+interface WindowStateSnapshot {
+  isMaximized: boolean;
+  isFullScreen: boolean;
+  isFocused: boolean;
+  appVersion: string;
+}
+
+type DesktopEditAction = 'undo' | 'redo' | 'cut' | 'copy' | 'paste' | 'selectAll';
+type DesktopViewAction =
+  | 'reload'
+  | 'forceReload'
+  | 'toggleDevTools'
+  | 'resetZoom'
+  | 'zoomIn'
+  | 'zoomOut'
+  | 'toggleFullScreen';
+
+const isMac = process.platform === 'darwin';
+const useCustomTitleBar = !isMac;
+
+function getWindowStateSnapshot(win: BrowserWindow | null): WindowStateSnapshot {
+  if (!win || win.isDestroyed()) {
+    return {
+      isMaximized: false,
+      isFullScreen: false,
+      isFocused: false,
+      appVersion: app.getVersion(),
+    };
+  }
+  return {
+    isMaximized: win.isMaximized(),
+    isFullScreen: win.isFullScreen(),
+    isFocused: win.isFocused(),
+    appVersion: app.getVersion(),
+  };
+}
+
+function clampZoomFactor(factor: number): number {
+  return Math.min(1.5, Math.max(0.7, Math.round(factor * 10) / 10));
+}
+
+function getZoomPercent(win: BrowserWindow | null): number {
+  if (!win || win.isDestroyed()) return 100;
+  return Math.round(win.webContents.getZoomFactor() * 100);
+}
+
+function emitWindowState(win: BrowserWindow | null): void {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send('coodance:window-state', getWindowStateSnapshot(win));
+}
+
+function emitZoomChanged(win: BrowserWindow | null): void {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send('coodance:zoom-changed', getZoomPercent(win));
+}
+
+function resolveSenderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null {
+  return BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+}
+
 async function createMainWindow(): Promise<void> {
   const devUrl = process.env.COODANCE_DEV_URL;
 
@@ -237,8 +301,17 @@ async function createMainWindow(): Promise<void> {
     show: !isSmokeTest,
     title: 'CooDance Studio — Code-as-Video 16:9',
     backgroundColor: '#0b0d11',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    trafficLightPosition: process.platform === 'darwin' ? { x: 14, y: 18 } : undefined,
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset' as const,
+          trafficLightPosition: { x: 14, y: 16 },
+        }
+      : {
+          frame: false,
+          titleBarStyle: 'hidden' as const,
+          autoHideMenuBar: false,
+          thickFrame: true,
+        }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -247,6 +320,20 @@ async function createMainWindow(): Promise<void> {
     },
   });
 
+  if (useCustomTitleBar) {
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.removeMenu();
+  }
+
+  const syncState = () => emitWindowState(mainWindow);
+  mainWindow.on('maximize', syncState);
+  mainWindow.on('unmaximize', syncState);
+  mainWindow.on('enter-full-screen', syncState);
+  mainWindow.on('leave-full-screen', syncState);
+  mainWindow.on('focus', syncState);
+  mainWindow.on('blur', syncState);
+  mainWindow.on('restore', syncState);
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -254,6 +341,88 @@ async function createMainWindow(): Promise<void> {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // Preserve essential View/DevTools/Zoom shortcuts on Windows/Linux without native menu bar
+  if (useCustomTitleBar) {
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.type !== 'keyDown' || !mainWindow || mainWindow.isDestroyed()) return;
+      const key = input.key.toLowerCase();
+      const ctrl = input.control && !input.meta;
+
+      if (input.key === 'F11') {
+        event.preventDefault();
+        mainWindow.setFullScreen(!mainWindow.isFullScreen());
+        syncState();
+        return;
+      }
+
+      if (input.key === 'F12' || (ctrl && input.shift && !input.alt && key === 'i')) {
+        event.preventDefault();
+        mainWindow.webContents.toggleDevTools();
+        return;
+      }
+
+      if (input.key === 'F5' || (ctrl && !input.alt && key === 'r')) {
+        event.preventDefault();
+        if (input.shift || (ctrl && input.key === 'F5')) {
+          mainWindow.webContents.reloadIgnoringCache();
+        } else {
+          mainWindow.webContents.reload();
+        }
+        return;
+      }
+
+      if (ctrl && !input.alt) {
+        if (key === '0') {
+          event.preventDefault();
+          mainWindow.webContents.setZoomFactor(1);
+          emitZoomChanged(mainWindow);
+        } else if (key === '=' || key === '+') {
+          event.preventDefault();
+          mainWindow.webContents.setZoomFactor(
+            clampZoomFactor(mainWindow.webContents.getZoomFactor() + 0.1),
+          );
+          emitZoomChanged(mainWindow);
+        } else if (key === '-') {
+          event.preventDefault();
+          mainWindow.webContents.setZoomFactor(
+            clampZoomFactor(mainWindow.webContents.getZoomFactor() - 0.1),
+          );
+          emitZoomChanged(mainWindow);
+        }
+      }
+    });
+  }
+
+  // Provide clean native right-click editing menu inside inputs/textareas and selected text
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const hasSelection = Boolean(params.selectionText && params.selectionText.trim().length > 0);
+    if (!params.isEditable && !hasSelection) return;
+
+    const items: Electron.MenuItemConstructorOptions[] = [];
+    if (params.isEditable) {
+      items.push(
+        { label: '撤销', role: 'undo', enabled: params.editFlags.canUndo },
+        { label: '重做', role: 'redo', enabled: params.editFlags.canRedo },
+        { type: 'separator' },
+        { label: '剪切', role: 'cut', enabled: params.editFlags.canCut },
+        { label: '复制', role: 'copy', enabled: params.editFlags.canCopy },
+        { label: '粘贴', role: 'paste', enabled: params.editFlags.canPaste },
+        { type: 'separator' },
+        { label: '全选', role: 'selectAll', enabled: params.editFlags.canSelectAll },
+      );
+    } else if (hasSelection) {
+      items.push(
+        { label: '复制', role: 'copy', enabled: params.editFlags.canCopy },
+        { label: '全选', role: 'selectAll', enabled: params.editFlags.canSelectAll },
+      );
+    }
+
+    if (items.length > 0) {
+      Menu.buildFromTemplate(items).popup({ window: mainWindow });
+    }
   });
 
   // Render an immediate dark loading screen before the embedded Node server finishes booting
@@ -330,24 +499,26 @@ async function runSmokeTest(): Promise<void> {
 }
 
 function buildAppMenu(): void {
-  const isMac = process.platform === 'darwin';
+  if (!isMac) {
+    // On Windows/Linux, remove the native Win32/GTK menu bar entirely;
+    // Edit/View/Zoom/DevTools controls are exposed through the custom in-app Studio TitleBar menu.
+    Menu.setApplicationMenu(null);
+    return;
+  }
+
   const template: Electron.MenuItemConstructorOptions[] = [
-    ...(isMac
-      ? [
-          {
-            label: app.name,
-            submenu: [
-              { role: 'about' as const },
-              { type: 'separator' as const },
-              { role: 'hide' as const },
-              { role: 'hideOthers' as const },
-              { role: 'unhide' as const },
-              { type: 'separator' as const },
-              { role: 'quit' as const },
-            ],
-          },
-        ]
-      : []),
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
     {
       label: 'Edit',
       submenu: [
@@ -364,6 +535,7 @@ function buildAppMenu(): void {
       label: 'View',
       submenu: [
         { role: 'reload' },
+        { role: 'forceReload' },
         { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'resetZoom' },
@@ -372,6 +544,10 @@ function buildAppMenu(): void {
         { type: 'separator' },
         { role: 'togglefullscreen' },
       ],
+    },
+    {
+      label: 'Window',
+      submenu: [{ role: 'minimize' }, { role: 'zoom' }, { type: 'separator' }, { role: 'front' }],
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -399,6 +575,124 @@ ipcMain.handle('coodance:open-external', async (_event, url: string) => {
   if (/^https?:\/\//i.test(url)) {
     await shell.openExternal(url);
   }
+});
+
+ipcMain.handle('coodance:window-minimize', (event) => {
+  const win = resolveSenderWindow(event);
+  if (win && !win.isDestroyed()) {
+    win.minimize();
+  }
+});
+
+ipcMain.handle('coodance:window-toggle-maximize', (event) => {
+  const win = resolveSenderWindow(event);
+  if (!win || win.isDestroyed()) return getWindowStateSnapshot(null);
+  if (win.isFullScreen()) {
+    win.setFullScreen(false);
+  } else if (win.isMaximized()) {
+    win.unmaximize();
+  } else {
+    win.maximize();
+  }
+  const state = getWindowStateSnapshot(win);
+  emitWindowState(win);
+  return state;
+});
+
+ipcMain.handle('coodance:window-toggle-fullscreen', (event) => {
+  const win = resolveSenderWindow(event);
+  if (!win || win.isDestroyed()) return getWindowStateSnapshot(null);
+  win.setFullScreen(!win.isFullScreen());
+  const state = getWindowStateSnapshot(win);
+  emitWindowState(win);
+  return state;
+});
+
+ipcMain.handle('coodance:window-close', (event) => {
+  const win = resolveSenderWindow(event);
+  if (win && !win.isDestroyed()) {
+    win.close();
+  }
+});
+
+ipcMain.handle('coodance:window-get-state', (event) => {
+  return getWindowStateSnapshot(resolveSenderWindow(event));
+});
+
+ipcMain.handle('coodance:window-set-theme', (event, theme: 'dark' | 'light') => {
+  const win = resolveSenderWindow(event);
+  if (win && !win.isDestroyed()) {
+    win.setBackgroundColor(theme === 'light' ? '#f3f4f6' : '#0b0d11');
+  }
+});
+
+ipcMain.handle('coodance:edit-action', (event, action: DesktopEditAction) => {
+  const win = resolveSenderWindow(event);
+  if (!win || win.isDestroyed()) return;
+  const wc = win.webContents;
+  switch (action) {
+    case 'undo':
+      wc.undo();
+      break;
+    case 'redo':
+      wc.redo();
+      break;
+    case 'cut':
+      wc.cut();
+      break;
+    case 'copy':
+      wc.copy();
+      break;
+    case 'paste':
+      wc.paste();
+      break;
+    case 'selectAll':
+      wc.selectAll();
+      break;
+  }
+});
+
+ipcMain.handle('coodance:view-action', (event, action: DesktopViewAction) => {
+  const win = resolveSenderWindow(event);
+  if (!win || win.isDestroyed()) {
+    return { zoomPercent: 100, state: getWindowStateSnapshot(null) };
+  }
+  const wc = win.webContents;
+  switch (action) {
+    case 'reload':
+      wc.reload();
+      break;
+    case 'forceReload':
+      wc.reloadIgnoringCache();
+      break;
+    case 'toggleDevTools':
+      wc.toggleDevTools();
+      break;
+    case 'resetZoom':
+      wc.setZoomFactor(1);
+      emitZoomChanged(win);
+      break;
+    case 'zoomIn':
+      wc.setZoomFactor(clampZoomFactor(wc.getZoomFactor() + 0.1));
+      emitZoomChanged(win);
+      break;
+    case 'zoomOut':
+      wc.setZoomFactor(clampZoomFactor(wc.getZoomFactor() - 0.1));
+      emitZoomChanged(win);
+      break;
+    case 'toggleFullScreen':
+      win.setFullScreen(!win.isFullScreen());
+      emitWindowState(win);
+      break;
+  }
+  return {
+    zoomPercent: getZoomPercent(win),
+    state: getWindowStateSnapshot(win),
+  };
+});
+
+ipcMain.handle('coodance:view-get-zoom', (event) => {
+  return getZoomPercent(resolveSenderWindow(event));
 });
 
 if (!isSmokeTest) {

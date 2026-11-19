@@ -287,12 +287,44 @@ export interface ProgressEventDto {
   timestamp: string;
 }
 
+export interface DesktopWindowStateDto {
+  isMaximized: boolean;
+  isFullScreen: boolean;
+  isFocused: boolean;
+  appVersion: string;
+}
+
+export type DesktopEditAction = 'undo' | 'redo' | 'cut' | 'copy' | 'paste' | 'selectAll';
+export type DesktopViewAction =
+  | 'reload'
+  | 'forceReload'
+  | 'toggleDevTools'
+  | 'resetZoom'
+  | 'zoomIn'
+  | 'zoomOut'
+  | 'toggleFullScreen';
+
 export interface DesktopBridge {
   isDesktop: boolean;
   platform: string;
+  customTitleBar?: boolean;
   selectDirectory: () => Promise<string | null>;
   revealPath: (targetPath: string) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
+  windowMinimize?: () => Promise<void>;
+  windowToggleMaximize?: () => Promise<DesktopWindowStateDto>;
+  windowToggleFullscreen?: () => Promise<DesktopWindowStateDto>;
+  windowClose?: () => Promise<void>;
+  getWindowState?: () => Promise<DesktopWindowStateDto>;
+  onWindowStateChange?: (listener: (state: DesktopWindowStateDto) => void) => () => void;
+  setThemeBackground?: (theme: 'dark' | 'light') => Promise<void>;
+  executeEditAction?: (action: DesktopEditAction) => Promise<void>;
+  executeViewAction?: (action: DesktopViewAction) => Promise<{
+    zoomPercent: number;
+    state: DesktopWindowStateDto;
+  }>;
+  getZoomPercent?: () => Promise<number>;
+  onZoomChange?: (listener: (zoomPercent: number) => void) => () => void;
 }
 
 declare global {

@@ -1,20 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Sparkles, FolderOpen, Radio } from 'lucide-react';
 import {
-  Settings,
-  Sun,
-  Moon,
-  Languages,
-  Tag,
-  Sparkles,
-  FileText,
-  Film,
-  Layers,
-  Clapperboard,
-  FolderOpen,
-  Radio,
-  Bot,
-} from 'lucide-react';
-import {
+  DesktopWindowStateDto,
   FfmpegHealthDto,
   ProgressEventDto,
   ProjectSummaryDto,
@@ -25,6 +12,7 @@ import {
   setStoredToken,
 } from './api';
 import { UiLang, t } from './i18n';
+import { DesktopWindowControls, StageTab, StudioTitleBar } from './components/StudioTitleBar';
 import { ProjectSidebar } from './components/ProjectSidebar';
 import { ScriptTtsView } from './components/ScriptTtsView';
 import { AssetInspectorView } from './components/AssetInspectorView';
@@ -32,8 +20,6 @@ import { StoryboardStudioView } from './components/StoryboardStudioView';
 import { RenderSnapshotsView } from './components/RenderSnapshotsView';
 import { SettingsModal } from './components/SettingsModal';
 import { AgentHubModal } from './components/AgentHubModal';
-
-type StageTab = 'script' | 'assets' | 'storyboard' | 'render';
 
 export const App: React.FC = () => {
   const [lang, setLang] = useState<UiLang>('zh-CN');
@@ -61,6 +47,12 @@ export const App: React.FC = () => {
     assetPath: string;
     trimStartSec: number;
   } | null>(null);
+  const [windowState, setWindowState] = useState<DesktopWindowStateDto>({
+    isMaximized: false,
+    isFullScreen: false,
+    isFocused: true,
+    appVersion: '',
+  });
 
   const notify = useCallback((msg: string, level: 'info' | 'success' | 'error' = 'info') => {
     setToast({ msg, level });
@@ -74,7 +66,24 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', uiTheme);
+    void window.coodanceDesktop?.setThemeBackground?.(uiTheme);
   }, [uiTheme]);
+
+  useEffect(() => {
+    const desktop = window.coodanceDesktop;
+    if (!desktop?.isDesktop) return;
+    let mounted = true;
+    void desktop.getWindowState?.().then((state) => {
+      if (mounted && state) setWindowState(state);
+    });
+    const unsub = desktop.onWindowStateChange?.((state) => {
+      setWindowState(state);
+    });
+    return () => {
+      mounted = false;
+      unsub?.();
+    };
+  }, []);
 
   const loadProjectWorkspace = useCallback(async (slug: string) => {
     const data = await apiRequest<ProjectWorkspaceDto>(`/api/projects/${encodeURIComponent(slug)}`);
@@ -220,135 +229,84 @@ export const App: React.FC = () => {
     }
   };
 
+  const isFramelessDesktop = Boolean(window.coodanceDesktop?.customTitleBar);
+  const shellClasses = [
+    'studio-shell',
+    isFramelessDesktop ? 'desktop-frameless' : '',
+    windowState.isMaximized ? 'is-maximized' : '',
+    windowState.isFullScreen ? 'is-fullscreen' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   if (authNeeded) {
     return (
-      <div className="empty-stage" style={{ height: '100%' }}>
-        <div className="panel-card" style={{ width: 380, padding: 22, gap: 14 }}>
-          <h2 className="panel-title">CooDance Web 访问认证</h2>
-          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', textAlign: 'left' }}>
-            当前自托管服务启用了访问口令保护，请输入 <code className="mono">COODANCE_ACCESS_TOKEN</code>。
+      <div
+        className={`auth-shell ${isFramelessDesktop ? 'desktop-frameless' : ''} ${windowState.isMaximized ? 'is-maximized' : ''}`}
+      >
+        {isFramelessDesktop ? (
+          <header className="studio-topbar is-desktop has-window-controls auth-topbar">
+            <div className="topbar-left">
+              <div className="brand-group">
+                <div className="brand-mark">CD</div>
+                <h1 className="brand-title">CooDance</h1>
+              </div>
+            </div>
+            <div className="topbar-right">
+              <DesktopWindowControls
+                lang={lang}
+                windowState={windowState}
+                onWindowStateChange={setWindowState}
+              />
+            </div>
+          </header>
+        ) : null}
+        <div className="empty-stage" style={{ flex: 1 }}>
+          <div className="panel-card" style={{ width: 380, padding: 22, gap: 14 }}>
+            <h2 className="panel-title">CooDance Web 访问认证</h2>
+            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', textAlign: 'left' }}>
+              当前自托管服务启用了访问口令保护，请输入 <code className="mono">COODANCE_ACCESS_TOKEN</code>。
+            </div>
+            <input
+              type="password"
+              className="input mono"
+              placeholder="输入访问口令..."
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setStoredToken(tokenInput.trim());
+                void loadAll();
+              }}
+            >
+              解锁工作台
+            </button>
           </div>
-          <input
-            type="password"
-            className="input mono"
-            placeholder="输入访问口令..."
-            value={tokenInput}
-            onChange={(e) => setTokenInput(e.target.value)}
-          />
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              setStoredToken(tokenInput.trim());
-              void loadAll();
-            }}
-          >
-            解锁工作台
-          </button>
         </div>
       </div>
     );
   }
 
-  const platformBadge = window.coodanceDesktop?.isDesktop
-    ? window.coodanceDesktop.platform === 'darwin'
-      ? 'macOS Desktop'
-      : window.coodanceDesktop.platform === 'win32'
-        ? 'Windows Desktop'
-        : 'Desktop'
-    : 'Web Studio';
-
   return (
-    <div className="studio-shell">
-      {/* Top Studio Header Bar */}
-      <header className="studio-topbar">
-        <div className="brand-group">
-          <div className="brand-mark">CD</div>
-          <div>
-            <h1 className="brand-title">CooDance</h1>
-          </div>
-          <span className="brand-badge">{platformBadge}</span>
-        </div>
-
-        <nav className="stage-nav" aria-label="Pipeline Stages">
-          {(
-            [
-              { id: 'script', num: 1, label: t(lang, 'tabScript'), icon: FileText },
-              { id: 'assets', num: 2, label: t(lang, 'tabAssets'), icon: Film },
-              { id: 'storyboard', num: 3, label: t(lang, 'tabStoryboard'), icon: Layers },
-              { id: 'render', num: 4, label: t(lang, 'tabRender'), icon: Clapperboard },
-            ] as const
-          ).map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                id={`tab-${item.id}`}
-                type="button"
-                className={`stage-tab ${activeTab === item.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(item.id)}
-              >
-                <span className="stage-step-num">{item.num}</span>
-                <Icon size={13} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="topbar-actions">
-          <button
-            id="btn-open-agent-hub"
-            type="button"
-            className="btn btn-sm topbar-agent-btn"
-            onClick={() => setShowAgentHub(true)}
-          >
-            <Bot size={13} />
-            {t(lang, 'agentHub')}
-          </button>
-
-          {activeSlug ? (
-            <button
-              id="btn-quick-snapshot"
-              type="button"
-              className="btn btn-sm"
-              onClick={() => void handleQuickSnapshot()}
-            >
-              <Tag size={13} />
-              {t(lang, 'quickSnapshot')}
-            </button>
-          ) : null}
-
-          <button
-            type="button"
-            className="btn btn-sm btn-icon"
-            title={lang === 'zh-CN' ? 'Switch to English' : '切换中文'}
-            onClick={() => setLang((l) => (l === 'zh-CN' ? 'en-US' : 'zh-CN'))}
-          >
-            <Languages size={14} />
-          </button>
-
-          <button
-            id="btn-theme-toggle"
-            type="button"
-            className="btn btn-sm btn-icon"
-            title={uiTheme === 'dark' ? '切换浅色主题' : '切换暗色工坊主题'}
-            onClick={() => setUiTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
-          >
-            {uiTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-
-          <button
-            id="btn-open-settings"
-            type="button"
-            className="btn btn-sm"
-            onClick={() => setShowSettings(true)}
-          >
-            <Settings size={13} />
-            {t(lang, 'settings')}
-          </button>
-        </div>
-      </header>
+    <div className={shellClasses}>
+      {/* Custom Integrated Studio TitleBar & App Menu */}
+      <StudioTitleBar
+        lang={lang}
+        uiTheme={uiTheme}
+        activeTab={activeTab}
+        activeSlug={activeSlug}
+        windowState={windowState}
+        onSelectTab={setActiveTab}
+        onOpenAgentHub={() => setShowAgentHub(true)}
+        onQuickSnapshot={() => void handleQuickSnapshot()}
+        onToggleLang={() => setLang((l) => (l === 'zh-CN' ? 'en-US' : 'zh-CN'))}
+        onToggleTheme={() => setUiTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
+        onOpenSettings={() => setShowSettings(true)}
+        onWindowStateChange={setWindowState}
+      />
 
       {/* Left Project Switcher Sidebar */}
       <ProjectSidebar

@@ -37,53 +37,165 @@ body,
 .studio-shell {
   display: grid;
   grid-template-columns: 268px minmax(0, 1fr);
-  grid-template-rows: 54px minmax(0, 1fr);
+  grid-template-rows: 48px minmax(0, 1fr);
   width: 100%;
   height: 100%;
   background: var(--bg-canvas);
+  position: relative;
 }
 
-/* Top Header Bar */
+.auth-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-canvas);
+  position: relative;
+}
+
+.studio-shell.desktop-frameless:not(.is-maximized):not(.is-fullscreen)::after,
+.auth-shell.desktop-frameless:not(.is-maximized)::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  border: 1px solid var(--border-subtle);
+  pointer-events: none;
+  z-index: 200;
+}
+
+/* Top Header Bar (Unified Custom TitleBar on Desktop) */
 .studio-topbar {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 0 16px;
+  gap: 12px;
+  height: 48px;
+  padding: 0 14px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
-  z-index: 20;
+  z-index: 40;
+  position: relative;
+}
+
+.studio-topbar.is-desktop {
+  -webkit-app-region: drag;
+  app-region: drag;
+  user-select: none;
+}
+
+.studio-topbar.is-desktop button,
+.studio-topbar.is-desktop a,
+.studio-topbar.is-desktop input,
+.studio-topbar.is-desktop select,
+.studio-topbar.is-desktop .brand-menu-anchor,
+.studio-topbar.is-desktop .studio-app-menu,
+.studio-topbar.is-desktop .stage-nav,
+.studio-topbar.is-desktop .topbar-actions,
+.studio-topbar.is-desktop .window-controls {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.studio-topbar.has-window-controls {
+  padding-right: 0;
+}
+
+.studio-topbar.platform-darwin {
+  padding-left: 82px;
+}
+
+.studio-topbar.auth-topbar {
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .brand-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 244px;
+  gap: 9px;
+}
+
+.brand-menu-anchor {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.brand-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px 0 4px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.brand-menu-trigger:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.brand-menu-trigger.open {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+.brand-menu-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  color: var(--text-muted);
+  transition: transform 150ms ease, color 140ms ease, background 140ms ease;
+}
+
+.brand-menu-trigger:hover .brand-menu-chevron,
+.brand-menu-trigger.open .brand-menu-chevron {
+  color: var(--text-primary);
+}
+
+.brand-menu-trigger.open .brand-menu-chevron {
+  transform: rotate(180deg);
 }
 
 .brand-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   background: var(--accent);
   color: var(--accent-ink);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 14px;
+  font-size: 12.5px;
   letter-spacing: -0.04em;
   flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .brand-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+  line-height: 1;
 }
 
 .brand-badge {
@@ -97,27 +209,247 @@ body,
   color: var(--text-secondary);
 }
 
+/* Custom In-App Studio Menu Popover (Replaces Native Win32 Edit/View Menu Bar) */
+@keyframes appMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.studio-app-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  width: 312px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  z-index: 90;
+  animation: appMenuIn 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-menu-section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 4px 8px 5px;
+}
+
+.app-menu-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.app-menu-grid-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 31px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.app-menu-grid-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.app-menu-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.app-menu-row:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.app-menu-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.app-menu-item-main svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.app-menu-grid-btn:hover .app-menu-item-main svg,
+.app-menu-row:hover .app-menu-item-main svg {
+  color: var(--accent);
+}
+
+.app-menu-kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 1px 5px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.app-menu-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 7px 4px;
+}
+
+.app-menu-zoom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 8px;
+  margin-bottom: 3px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.app-menu-zoom-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.app-menu-zoom-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+}
+
+.app-menu-zoom-btn {
+  width: 24px;
+  height: 22px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.app-menu-zoom-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.app-menu-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.app-menu-zoom-value {
+  min-width: 44px;
+  height: 22px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.app-menu-zoom-value:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+
+.app-menu-footer {
+  margin-top: 7px;
+  padding: 7px 8px 2px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.app-menu-version {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
 .stage-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 10px;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9px;
   background: var(--bg-canvas);
   border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .stage-tab {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 13px;
-  border-radius: 7px;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 6px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-sans);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background 140ms ease, color 140ms ease;
@@ -137,9 +469,9 @@ body,
 
 .stage-step-num {
   font-family: var(--font-mono);
-  font-size: 11px;
-  width: 18px;
-  height: 18px;
+  font-size: 10.5px;
+  width: 17px;
+  height: 17px;
   border-radius: 5px;
   display: inline-flex;
   align-items: center;
@@ -154,10 +486,155 @@ body,
   font-weight: 800;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+/* Bespoke In-App Desktop Window Controls (Windows / Linux Frameless TitleBar) */
+.window-controls-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-subtle);
+  margin: 0 2px 0 10px;
+  flex-shrink: 0;
+}
+
+.window-controls {
+  display: inline-flex;
+  align-items: stretch;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.window-ctrl-btn {
+  width: 44px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 130ms ease, color 130ms ease, opacity 130ms ease;
+}
+
+.window-ctrl-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.window-ctrl-btn:active {
+  background: var(--border-strong);
+}
+
+.window-ctrl-close:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.window-ctrl-close:active {
+  background: #b91c1c;
+  color: #ffffff;
+}
+
+.studio-topbar.window-unfocused .window-ctrl-btn {
+  opacity: 0.52;
+}
+
+.studio-topbar.window-unfocused .window-ctrl-btn:hover {
+  opacity: 1;
+}
+
+@media (max-width: 1360px) {
+  .topbar-hide-compact {
+    display: none;
+  }
+
+  .stage-tab {
+    padding: 5px 9px;
+  }
+}
+
+@media (max-width: 1240px) {
+  .studio-topbar {
+    gap: 8px;
+    padding-left: 10px;
+  }
+
+  .studio-topbar.platform-darwin {
+    padding-left: 78px;
+  }
+
+  .brand-menu-trigger {
+    gap: 6px;
+    padding: 0 6px 0 4px;
+  }
+
+  .stage-tab {
+    padding: 4px 8px;
+    gap: 5px;
+    font-size: 11.5px;
+  }
+
+  .stage-tab svg {
+    display: none;
+  }
+
+  .topbar-actions {
+    gap: 4px;
+  }
+
+  .topbar-actions .btn-sm {
+    padding: 0 8px;
+    font-size: 11.5px;
+    gap: 4px;
+  }
+
+  .topbar-actions .btn-icon {
+    width: 28px;
+    padding: 0;
+  }
+
+  .window-controls-divider {
+    margin: 0 2px 0 6px;
+  }
+
+  .window-ctrl-btn {
+    width: 40px;
+  }
+}
+
+@media (max-width: 1160px) {
+  .stage-tab {
+    padding: 4px 7px;
+    gap: 4px;
+  }
+
+  .stage-step-num {
+    width: 15px;
+    height: 15px;
+    font-size: 10px;
+  }
+
+  .topbar-hide-narrow {
+    display: none;
+  }
+
+  .topbar-actions .topbar-icon-collapse {
+    width: 28px;
+    padding: 0;
+  }
 }
 
 /* Left Project Sidebar */
