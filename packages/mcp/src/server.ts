@@ -167,7 +167,7 @@ export function createCoodanceMcpServer(deps: CoodanceMcpServerDeps = {}): McpSe
 
   const server = new McpServer({
     name: 'coodance-studio',
-    version: '1.1.1',
+    version: '1.1.2',
   });
 
   // ---------------------------------------------------------------------------

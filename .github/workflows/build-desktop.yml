@@ -211,7 +211,7 @@ jobs:
                 const timer = setTimeout(() => {
                   finish(new Error("Packaged MCP stdio smoke timed out after 30s.\nSTDOUT: " + stdout + "\nSTDERR: " + stderr));
                 }, 30000);
-                child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.1.1" } } }) + "\n");
+                child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.1.2" } } }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }) + "\n");
               });
@@ -267,10 +267,9 @@ jobs:
 
           **纯代码化（Code-as-Video）16:9 自动化视频生产工作台与管线**，统一支持 **Web 自托管、Windows 桌面、macOS 桌面** 与 **全套兼容 CLI 脚本**。
 
-          ### 本次修复与优化（v1.1.1）
-          - **修复 Windows / macOS 打包版启动无窗口与僵尸进程**：补齐 `react` / `react-dom` 与 `@coodance/remotion` 打包依赖，改为按需懒加载 Remotion 与 `simple-icons`，修复错误被吞导致的误导性 `apps/server/dist/app.js` 报错，并增加启动错误弹窗兜底与单实例防重复打开。
-          - **新增暗色即时启动页 & 显著提速瘦身**：双击即显启动加载页；将离线 MCP 打包为单文件 `resources/mcp/stdio.mjs` 并按平台剔除冗余跨平台 `ffprobe` 与 3,472 个散装 SVG，解包文件数下降 93%（6,681 → 472），安装包体积瘦身 326 MB，大幅减少 Windows Defender 首次扫描耗时。
-          - **新增打包后实机冒烟门禁**：CI 构建完成后自动启动打包产物验证 `/api/health`、前端挂载与离线 `ELECTRON_RUN_AS_NODE=1` MCP `stdio.mjs`。
+          ### 本次更新（v1.1.2）
+          - **Windows 自定义一体化标题栏与内置菜单**：移除 Windows 原生标题栏与菜单栏，在工作台顶部集成沉浸式自定义标题栏、窗口控制与常用视图/快捷键操作。
+          - **构建打包与安装包全面优化**：Windows 便携版改为免安装 `*-win-x64-portable.zip`（解压即用），macOS 移除冗余 `.zip` 仅保留高速 LZFSE（`ULFO`）压缩 `.dmg`（arm64 安装包进一步瘦身至 ~193 MB），并修正 macOS Intel (`x64`) 包内原生 `ffmpeg` / Remotion 二进制架构且纳入 Rosetta 2 实机冒烟校验；GitHub Actions 4 路并行提速超 50%。
 
           ### 核心特性
           - **外部 AI Agent 接入（MCP + Skill 协同引擎）**：内置 `@coodance/mcp`（11 个强校验 `coodance_*` 工具 + 4 个渐进式 Resources，同时支持 **Streamable HTTP `/mcp`** 与 **零依赖离线 `stdio` / `ELECTRON_RUN_AS_NODE=1`**），配套 5 阶段 `coodance-video-producer` Skill 规范包与工作台「Agent 接入中心」一键安全安装器（自动 `.bak` 备份合并 Cursor / Claude Code / Claude Desktop / Antigravity / Cherry Studio）。

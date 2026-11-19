@@ -1,6 +1,6 @@
 {
   "name": "@coodance/desktop",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "CooDance Desktop Studio for Windows and macOS",
   "author": "CooDance Contributors",
   "main": "./dist/main.js",
