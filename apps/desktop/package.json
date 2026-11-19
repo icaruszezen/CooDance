@@ -13,6 +13,8 @@
     "package:linux": "electron-builder --config electron-builder.yml --linux"
   },
   "dependencies": {
+    "@coodance/core": "*",
+    "@coodance/mcp": "*",
     "@coodance/server": "*"
   },
   "devDependencies": {

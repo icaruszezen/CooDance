@@ -41,8 +41,26 @@ jobs:
           node scripts/fetch-tg-emoji.mjs ci-smoke audio-bars --name audio-bars
           node scripts/generate-sfx.mjs ci-smoke click
           node scripts/inspect-assets.mjs ci-smoke --thumbs 4
+          node scripts/validate-edit-plan.mjs ci-smoke
           node scripts/snapshot.mjs ci-smoke "CI smoke verification"
           node scripts/snapshot.mjs ci-smoke --list
+          node -e '
+            import("./packages/mcp/dist/server.js").then(async () => {
+              const { spawn } = await import("node:child_process");
+              const proc = spawn(process.execPath, ["packages/mcp/dist/stdio.js"], { stdio: ["pipe", "pipe", "pipe"] });
+              let buf = "";
+              proc.stdout.on("data", (d) => { buf += d.toString(); });
+              proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.0.0" } } }) + "\n");
+              proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }) + "\n");
+              proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }) + "\n");
+              await new Promise((r) => setTimeout(r, 1200));
+              proc.kill();
+              if (!buf.includes("coodance_import_asset") || !buf.includes("coodance_save_edit_plan")) {
+                throw new Error("MCP stdio tools/list smoke check failed: " + buf);
+              }
+              console.log("MCP stdio smoke check passed");
+            });
+          '
 
   build-desktop:
     name: Build Desktop (${{ matrix.label }})

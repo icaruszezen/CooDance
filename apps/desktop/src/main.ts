@@ -31,38 +31,119 @@ async function bootEmbeddedServer(): Promise<RunningServerHandle> {
     process.env.COODANCE_REMOTION_DIR = remotionDir;
   }
 
-  // Use native dynamic import so CJS Electron main cleanly loads ESM @coodance/server
-  const dynamicImport = new Function('specifier', 'return import(specifier)') as (
-    specifier: string,
-  ) => Promise<{
-    startStudioServer: (opts: {
-      host?: string;
-      port?: number;
-      staticWebDir?: string;
-    }) => Promise<RunningServerHandle>;
-  }>;
+  const skillDir = resolveBundledPath('skills', 'coodance-video-producer');
+  if (fs.existsSync(skillDir)) {
+    process.env.COODANCE_SKILL_DIR = skillDir;
+  }
 
-  let mod: {
+  const stdioCandidates = [
+    path.join(
+      process.resourcesPath || '',
+      'app.asar.unpacked',
+      'node_modules',
+      '@coodance',
+      'mcp',
+      'dist',
+      'stdio.js',
+    ),
+    path.resolve(__dirname, '../../../packages/mcp/dist/stdio.js'),
+    path.resolve(app.getAppPath(), 'node_modules/@coodance/mcp/dist/stdio.js'),
+  ];
+  const mcpStdioScriptPath = stdioCandidates.find((p) => p && fs.existsSync(p));
+  if (mcpStdioScriptPath) {
+    process.env.COODANCE_MCP_STDIO_PATH = mcpStdioScriptPath;
+  }
+  process.env.COODANCE_ELECTRON_EXECUTABLE = process.execPath;
+
+  // Use native dynamic import so CJS Electron main cleanly loads ESM @coodance/core and @coodance/server
+  const dynamicImport = new Function('specifier', 'return import(specifier)') as <T>(
+    specifier: string,
+  ) => Promise<T>;
+
+  type ServerMod = {
     startStudioServer: (opts: {
       host?: string;
       port?: number;
       staticWebDir?: string;
+      isDesktop?: boolean;
+      fixedPortRequested?: number | null;
+      portFallbackReason?: string;
+      electronExecutablePath?: string;
+      mcpStdioScriptPath?: string;
+      skillSourceDir?: string;
     }) => Promise<RunningServerHandle>;
   };
 
+  type CoreMod = {
+    loadSettings: () => {
+      mcp: { enabled: boolean; fixedPortEnabled: boolean; fixedPort: number };
+    };
+  };
+
+  let fixedPortEnabled = true;
+  let fixedPort = 4170;
+  try {
+    const coreMod = await dynamicImport<CoreMod>('@coodance/core');
+    const currentSettings = coreMod.loadSettings();
+    fixedPortEnabled = currentSettings.mcp.fixedPortEnabled;
+    fixedPort = currentSettings.mcp.fixedPort;
+  } catch {
+    try {
+      const coreEntry = resolveBundledPath('packages', 'core', 'dist', 'index.js');
+      const coreMod = await dynamicImport<CoreMod>(pathToFileURL(coreEntry).href);
+      const currentSettings = coreMod.loadSettings();
+      fixedPortEnabled = currentSettings.mcp.fixedPortEnabled;
+      fixedPort = currentSettings.mcp.fixedPort;
+    } catch {
+      // Fallback to default port 4170
+    }
+  }
+
+  let mod: ServerMod;
   try {
     // In packaged Electron apps, @coodance/server is bundled inside app.asar/node_modules
-    // alongside express, @coodance/core, and all runtime dependencies.
-    mod = await dynamicImport('@coodance/server/app');
+    // alongside express, @coodance/core, @coodance/mcp, and all runtime dependencies.
+    mod = await dynamicImport<ServerMod>('@coodance/server/app');
   } catch {
     const serverEntry = resolveBundledPath('apps', 'server', 'dist', 'app.js');
-    mod = await dynamicImport(pathToFileURL(serverEntry).href);
+    mod = await dynamicImport<ServerMod>(pathToFileURL(serverEntry).href);
+  }
+
+  const baseOpts = {
+    host: '127.0.0.1',
+    staticWebDir,
+    isDesktop: true,
+    electronExecutablePath: process.execPath,
+    mcpStdioScriptPath,
+    skillSourceDir: fs.existsSync(skillDir) ? skillDir : undefined,
+  };
+
+  if (fixedPortEnabled && fixedPort >= 1024 && fixedPort <= 65535) {
+    try {
+      return await mod.startStudioServer({
+        ...baseOpts,
+        port: fixedPort,
+        fixedPortRequested: fixedPort,
+      });
+    } catch (err) {
+      const errCode = (err as NodeJS.ErrnoException)?.code;
+      const reason =
+        errCode === 'EADDRINUSE'
+          ? `固定 MCP 端口 ${fixedPort} 已被其他进程占用，已自动回退到随机可用端口。`
+          : `固定 MCP 端口 ${fixedPort} 启动失败（${err instanceof Error ? err.message : String(err)}），已回退到随机端口。`;
+      return mod.startStudioServer({
+        ...baseOpts,
+        port: 0,
+        fixedPortRequested: fixedPort,
+        portFallbackReason: reason,
+      });
+    }
   }
 
   return mod.startStudioServer({
-    host: '127.0.0.1',
+    ...baseOpts,
     port: 0,
-    staticWebDir,
+    fixedPortRequested: null,
   });
 }
 

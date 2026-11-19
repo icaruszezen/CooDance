@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@coodance/core": "*",
+    "@coodance/mcp": "*",
     "chokidar": "^4.0.3",
     "cors": "^2.8.5",
     "express": "^5.1.0",

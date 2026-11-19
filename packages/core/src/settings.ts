@@ -80,6 +80,13 @@ export function getDefaultSettings(): AppSettings {
     security: {
       webAccessToken: process.env.COODANCE_ACCESS_TOKEN || '',
     },
+    mcp: {
+      enabled: process.env.COODANCE_MCP_ENABLED !== '0',
+      fixedPortEnabled: process.env.COODANCE_MCP_FIXED_PORT_DISABLED !== '1',
+      fixedPort: process.env.COODANCE_PORT ? Number(process.env.COODANCE_PORT) || 4170 : 4170,
+      autoSnapshotOnAgentWrite: true,
+      allowPaidTtsFromAgent: false,
+    },
   };
 }
 
@@ -131,6 +138,14 @@ export function loadSettings(): AppSettings {
           decryptSecret(raw.security?.webAccessToken || '') ||
           defaults.security.webAccessToken,
       },
+      mcp: {
+        ...defaults.mcp,
+        ...(raw.mcp || {}),
+        fixedPort:
+          typeof raw.mcp?.fixedPort === 'number' && raw.mcp.fixedPort >= 1024 && raw.mcp.fixedPort <= 65535
+            ? Math.round(raw.mcp.fixedPort)
+            : defaults.mcp.fixedPort,
+      },
     };
     return merged;
   } catch {
@@ -140,6 +155,13 @@ export function loadSettings(): AppSettings {
 
 export function saveSettings(partial: Partial<AppSettings>): AppSettings {
   const current = loadSettings();
+  const nextFixedPort =
+    typeof partial.mcp?.fixedPort === 'number' &&
+    partial.mcp.fixedPort >= 1024 &&
+    partial.mcp.fixedPort <= 65535
+      ? Math.round(partial.mcp.fixedPort)
+      : current.mcp.fixedPort;
+
   const next: AppSettings = {
     workspaceDir: partial.workspaceDir?.trim() || current.workspaceDir,
     language: partial.language || current.language,
@@ -167,6 +189,11 @@ export function saveSettings(partial: Partial<AppSettings>): AppSettings {
     security: {
       ...current.security,
       ...(partial.security || {}),
+    },
+    mcp: {
+      ...current.mcp,
+      ...(partial.mcp || {}),
+      fixedPort: nextFixedPort,
     },
   };
 

@@ -377,6 +377,13 @@ export interface AppSettings {
   security: {
     webAccessToken: string;
   };
+  mcp: {
+    enabled: boolean;
+    fixedPortEnabled: boolean;
+    fixedPort: number;
+    autoSnapshotOnAgentWrite: boolean;
+    allowPaidTtsFromAgent: boolean;
+  };
 }
 
 export interface ProgressEvent {
@@ -389,3 +396,161 @@ export interface ProgressEvent {
   level?: 'info' | 'warn' | 'error' | 'success';
   timestamp: string;
 }
+
+export interface EditPlanValidationIssue {
+  severity: 'error' | 'warning';
+  code: string;
+  path: string;
+  message: string;
+  suggestion?: string;
+}
+
+export interface EditPlanValidationResult {
+  valid: boolean;
+  errors: EditPlanValidationIssue[];
+  warnings: EditPlanValidationIssue[];
+  summary: {
+    sceneCount: number;
+    overlayCount: number;
+    sfxCount: number;
+    chapterCount: number;
+    planDurationSec: number;
+    audioDurationSec: number | null;
+    referencedAssets: string[];
+    missingAssets: string[];
+  };
+  normalizedPlan?: EditPlan;
+}
+
+export type ImportAssetSourceType = 'localPath' | 'url' | 'base64' | 'text';
+export type ImportAssetCategory = 'auto' | 'media' | 'logos' | 'lottie' | 'sfx';
+
+export interface ImportAssetOptions {
+  sourceType: ImportAssetSourceType;
+  filename: string;
+  category?: ImportAssetCategory;
+  localPath?: string;
+  url?: string;
+  base64?: string;
+  content?: string;
+  overwrite?: boolean;
+  autoInspect?: boolean;
+  thumbsPerVideo?: number;
+}
+
+export interface ImportAssetResult {
+  relativePath: string;
+  fullPath: string;
+  sizeBytes: number;
+  kind: AssetKind;
+  category: Exclude<ImportAssetCategory, 'auto'>;
+  assetItem?: AssetManifestItem;
+  manifest?: AssetsManifest;
+}
+
+export type RenderJobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface RenderJobRecord {
+  jobId: string;
+  projectSlug: string;
+  preset: 'production' | 'draft';
+  status: RenderJobStatus;
+  stage: string;
+  progress: number;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  result?: RenderResult;
+  error?: string;
+  logs: Array<{ timestamp: string; stage: string; progress: number; message: string }>;
+}
+
+export type AgentClientId =
+  | 'cursor'
+  | 'claude-code'
+  | 'claude-desktop'
+  | 'antigravity'
+  | 'cherry-studio';
+
+export type AgentTransportMode = 'http' | 'stdio';
+
+export interface AgentClientStatus {
+  id: AgentClientId;
+  name: string;
+  description: string;
+  recommendedTransport: AgentTransportMode;
+  supportsHttp: boolean;
+  supportsStdio: boolean;
+  supportsSkillDir: boolean;
+  configPath: string | null;
+  skillInstallDir: string | null;
+  clientDetected: boolean;
+  mcpInstalled: boolean;
+  mcpInstalledMode?: AgentTransportMode | 'unknown';
+  skillInstalled: boolean;
+  canAutoInstall: boolean;
+}
+
+export interface AgentIntegrationInfo {
+  mcpEnabled: boolean;
+  httpEndpointUrl: string;
+  authRequired: boolean;
+  isDesktop: boolean;
+  platform: NodeJS.Platform;
+  fixedPortRequested: number | null;
+  actualPort: number;
+  portFallbackReason?: string;
+  workspaceDir: string;
+  configDir: string;
+  stdioCommand: string;
+  stdioArgs: string[];
+  stdioEnv: Record<string, string>;
+  stdioRuntimeLabel: string;
+  stdioAvailable: boolean;
+  skillDir: string | null;
+  skillFiles: Array<{ relativePath: string; sizeBytes: number }>;
+  clients: AgentClientStatus[];
+  snippets: {
+    cursorHttp: string;
+    cursorStdio: string;
+    claudeCodeHttp: string;
+    claudeCodeStdio: string;
+    claudeDesktopStdio: string;
+    claudeDesktopHttp: string;
+    genericHttp: string;
+    genericStdio: string;
+  };
+  guardrails: {
+    fixedPortEnabled: boolean;
+    fixedPort: number;
+    autoSnapshotOnAgentWrite: boolean;
+    allowPaidTtsFromAgent: boolean;
+  };
+}
+
+export interface InstallAgentOptions {
+  clientId: AgentClientId;
+  transport: AgentTransportMode;
+  installMcp?: boolean;
+  installSkill?: boolean;
+  dryRun?: boolean;
+  httpEndpointUrl?: string;
+  accessToken?: string;
+}
+
+export interface InstallAgentResult {
+  ok: boolean;
+  dryRun: boolean;
+  clientId: AgentClientId;
+  transport: AgentTransportMode;
+  mcpUpdated: boolean;
+  skillUpdated: boolean;
+  configPath: string | null;
+  backupPath?: string;
+  skillPath?: string;
+  previewConfigJson?: string;
+  message: string;
+  warnings: string[];
+}
+

@@ -124,11 +124,147 @@ export interface SettingsDto {
   security: {
     webAccessToken: string;
   };
+  mcp: {
+    enabled: boolean;
+    fixedPortEnabled: boolean;
+    fixedPort: number;
+    autoSnapshotOnAgentWrite: boolean;
+    allowPaidTtsFromAgent: boolean;
+  };
   secretsStatus?: {
     hasDoubaoToken: boolean;
     hasAiKey: boolean;
     hasWebAccessToken: boolean;
   };
+}
+
+export interface EditPlanValidationIssueDto {
+  severity: 'error' | 'warning';
+  code: string;
+  path: string;
+  message: string;
+  suggestion?: string;
+}
+
+export interface EditPlanValidationResultDto {
+  valid: boolean;
+  errors: EditPlanValidationIssueDto[];
+  warnings: EditPlanValidationIssueDto[];
+  summary: {
+    sceneCount: number;
+    overlayCount: number;
+    sfxCount: number;
+    chapterCount: number;
+    planDurationSec: number;
+    audioDurationSec: number | null;
+    referencedAssets: string[];
+    missingAssets: string[];
+  };
+}
+
+export type AgentClientId =
+  | 'cursor'
+  | 'claude-code'
+  | 'claude-desktop'
+  | 'antigravity'
+  | 'cherry-studio';
+
+export type AgentTransportMode = 'http' | 'stdio';
+
+export interface AgentClientStatusDto {
+  id: AgentClientId;
+  name: string;
+  description: string;
+  recommendedTransport: AgentTransportMode;
+  supportsHttp: boolean;
+  supportsStdio: boolean;
+  supportsSkillDir: boolean;
+  configPath: string | null;
+  skillInstallDir: string | null;
+  clientDetected: boolean;
+  mcpInstalled: boolean;
+  mcpInstalledMode?: AgentTransportMode | 'unknown';
+  skillInstalled: boolean;
+  canAutoInstall: boolean;
+}
+
+export interface AgentIntegrationInfoDto {
+  mcpEnabled: boolean;
+  httpEndpointUrl: string;
+  authRequired: boolean;
+  isDesktop: boolean;
+  platform: string;
+  fixedPortRequested: number | null;
+  actualPort: number;
+  portFallbackReason?: string;
+  workspaceDir: string;
+  configDir: string;
+  stdioCommand: string;
+  stdioArgs: string[];
+  stdioEnv: Record<string, string>;
+  stdioRuntimeLabel: string;
+  stdioAvailable: boolean;
+  skillDir: string | null;
+  skillFiles: Array<{ relativePath: string; sizeBytes: number }>;
+  clients: AgentClientStatusDto[];
+  snippets: {
+    cursorHttp: string;
+    cursorStdio: string;
+    claudeCodeHttp: string;
+    claudeCodeStdio: string;
+    claudeDesktopStdio: string;
+    claudeDesktopHttp: string;
+    genericHttp: string;
+    genericStdio: string;
+  };
+  guardrails: {
+    fixedPortEnabled: boolean;
+    fixedPort: number;
+    autoSnapshotOnAgentWrite: boolean;
+    allowPaidTtsFromAgent: boolean;
+  };
+}
+
+export interface McpCatalogItemDto {
+  name: string;
+  stage: 'project' | 'script' | 'assets' | 'storyboard' | 'render' | 'safety';
+  title: string;
+  description: string;
+  guardrail?: string;
+}
+
+export interface McpResourceItemDto {
+  uri: string;
+  name: string;
+  description: string;
+}
+
+export interface AgentInfoResponseDto {
+  info: AgentIntegrationInfoDto;
+  activeMcpSessions: number;
+  toolsCatalog: McpCatalogItemDto[];
+  resourcesCatalog: McpResourceItemDto[];
+}
+
+export interface InstallAgentResultDto {
+  ok: boolean;
+  dryRun: boolean;
+  clientId: AgentClientId;
+  transport: AgentTransportMode;
+  mcpUpdated: boolean;
+  skillUpdated: boolean;
+  configPath: string | null;
+  backupPath?: string;
+  skillPath?: string;
+  previewConfigJson?: string;
+  message: string;
+  warnings: string[];
+}
+
+export interface SkillFileDto {
+  relativePath: string;
+  content: string;
+  sizeBytes: number;
 }
 
 export interface FfmpegHealthDto {
@@ -214,6 +350,11 @@ export function projectFileUrl(slug: string, relativePath: string, download = fa
   if (download) params.set('download', '1');
   const q = params.toString();
   return `/api/projects/${encodeURIComponent(slug)}/files/${clean}${q ? `?${q}` : ''}`;
+}
+
+export function skillZipDownloadUrl(): string {
+  const token = getStoredToken();
+  return `/api/agent/skill.zip${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 }
 
 export function connectStudioWs(

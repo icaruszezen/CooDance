@@ -11,11 +11,12 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "npm run build --workspace=@coodance/core && npm run build --workspace=@coodance/remotion && npm run build --workspace=@coodance/server && npm run build --workspace=@coodance/web && npm run build --workspace=@coodance/desktop",
-    "typecheck": "npm run build --workspace=@coodance/core && npm run build --workspace=@coodance/remotion && npm run typecheck --workspace=@coodance/server && npm run typecheck --workspace=@coodance/web && npm run typecheck --workspace=@coodance/desktop",
+    "build": "npm run build --workspace=@coodance/core && npm run build --workspace=@coodance/remotion && npm run build --workspace=@coodance/mcp && npm run build --workspace=@coodance/server && npm run build --workspace=@coodance/web && npm run build --workspace=@coodance/desktop",
+    "typecheck": "npm run build --workspace=@coodance/core && npm run build --workspace=@coodance/remotion && npm run build --workspace=@coodance/mcp && npm run typecheck --workspace=@coodance/server && npm run typecheck --workspace=@coodance/web && npm run typecheck --workspace=@coodance/desktop",
     "dev:server": "npm run dev --workspace=@coodance/server",
     "dev:web": "npm run dev --workspace=@coodance/web",
     "start": "node apps/server/dist/index.js",
+    "mcp:stdio": "node packages/mcp/dist/stdio.js",
     "desktop:dev": "npm run dev --workspace=@coodance/desktop",
     "desktop:build:win": "npm run build && npm run package:win --workspace=@coodance/desktop",
     "desktop:build:mac": "npm run build && npm run package:mac --workspace=@coodance/desktop",
@@ -26,6 +27,7 @@
     "fetch-logo": "node scripts/fetch-logo.mjs",
     "fetch-tg-emoji": "node scripts/fetch-tg-emoji.mjs",
     "generate-sfx": "node scripts/generate-sfx.mjs",
+    "validate-plan": "node scripts/validate-edit-plan.mjs",
     "sync": "node scripts/sync-project.mjs",
     "studio": "npx remotion studio packages/remotion/src/registerRoot.ts",
     "render-project": "node scripts/render-project.mjs",

@@ -16,3 +16,8 @@ export * from './settings.js';
 export * from './aiStoryboard.js';
 export * from './projectInit.js';
 export * from './render.js';
+export * from './editPlanValidator.js';
+export * from './importAsset.js';
+export * from './renderJobs.js';
+export * from './agentIntegration.js';
+

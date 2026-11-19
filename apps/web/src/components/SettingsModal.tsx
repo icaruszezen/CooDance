@@ -225,7 +225,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <input
               type="password"
               className="input mono"
-              placeholder="可选：设置 COODANCE_ACCESS_TOKEN 保护私有 Web 部署"
+              placeholder="可选：设置 COODANCE_ACCESS_TOKEN 保护私有 Web 部署与 /mcp 端点"
               value={draft.security.webAccessToken}
               onChange={(e) =>
                 setDraft({
@@ -234,6 +234,89 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 })
               }
             />
+          </div>
+
+          {/* External AI Agent / MCP Settings */}
+          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 12.5 }}>
+              外部 AI Agent / MCP 服务与护栏
+            </div>
+            <div className="form-grid-2">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={draft.mcp?.enabled !== false}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      mcp: { ...draft.mcp, enabled: e.target.checked },
+                    })
+                  }
+                />
+                <span>启用 Streamable HTTP MCP (/mcp)</span>
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={draft.mcp?.autoSnapshotOnAgentWrite !== false}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      mcp: { ...draft.mcp, autoSnapshotOnAgentWrite: e.target.checked },
+                    })
+                  }
+                />
+                <span>Agent 写入前自动打 Git 快照</span>
+              </label>
+            </div>
+
+            <div className="form-grid-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={draft.mcp?.fixedPortEnabled !== false}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        mcp: { ...draft.mcp, fixedPortEnabled: e.target.checked },
+                      })
+                    }
+                  />
+                  <span>桌面端固定本地端口</span>
+                </label>
+                <input
+                  type="number"
+                  className="input mono"
+                  style={{ width: 88 }}
+                  min={1024}
+                  max={65535}
+                  disabled={draft.mcp?.fixedPortEnabled === false}
+                  value={draft.mcp?.fixedPort ?? 4170}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      mcp: { ...draft.mcp, fixedPort: Number(e.target.value) || 4170 },
+                    })
+                  }
+                />
+              </div>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={Boolean(draft.mcp?.allowPaidTtsFromAgent)}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      mcp: { ...draft.mcp, allowPaidTtsFromAgent: e.target.checked },
+                    })
+                  }
+                />
+                <span>允许外部 Agent 调用付费豆包 TTS</span>
+              </label>
+            </div>
           </div>
         </div>
 

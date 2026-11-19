@@ -17,6 +17,8 @@ extraResources:
     to: packages/remotion/src
   - from: ../../packages/remotion/package.json
     to: packages/remotion/package.json
+  - from: ../../skills/coodance-video-producer
+    to: skills/coodance-video-producer
 asar: true
 asarUnpack:
   - "**/ffmpeg-static/**"
@@ -24,6 +26,16 @@ asarUnpack:
   - "**/@remotion/compositor-*/**"
   - "**/@remotion/bundler/**"
   - "**/@remotion/renderer/**"
+  - "**/@coodance/mcp/**"
+  - "**/@coodance/core/**"
+  - "**/@modelcontextprotocol/**"
+  - "**/zod/**"
+  - "**/zod-to-json-schema/**"
+  - "**/ajv/**"
+  - "**/ajv-formats/**"
+  - "**/simple-icons/**"
+  - "**/@lobehub/icons-static-svg/**"
+  - "**/ws/**"
 mac:
   category: public.app-category.video
   icon: build-resources/icon.png
