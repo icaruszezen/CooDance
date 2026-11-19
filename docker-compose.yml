@@ -1,0 +1,21 @@
+services:
+  coodance:
+    build: .
+    container_name: coodance-studio
+    ports:
+      - "4170:4170"
+    environment:
+      - COODANCE_HOST=0.0.0.0
+      - COODANCE_PORT=4170
+      - COODANCE_WORKSPACE=/workspace
+      - COODANCE_CONFIG_DIR=/config
+      # Optional: uncomment to protect self-hosted Web access
+      # - COODANCE_ACCESS_TOKEN=your-secret-token
+      # Optional: Volcengine Doubao TTS 2.0 credentials
+      # - VOLC_TTS_APP_ID=
+      # - VOLC_TTS_ACCESS_TOKEN=
+      # - VOLC_TTS_RESOURCE_ID=seed-tts-2.0
+    volumes:
+      - ./workspace:/workspace
+      - ./config:/config
+    restart: unless-stopped

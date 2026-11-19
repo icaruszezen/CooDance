@@ -1,0 +1,13 @@
+node_modules/
+dist/
+release/
+.remotion/
+.coodance-workspace/
+projects/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.local
+packages/remotion/src/active-project.generated.json
+packages/remotion/public/
