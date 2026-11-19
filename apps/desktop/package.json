@@ -1,0 +1,22 @@
+{
+  "name": "@coodance/desktop",
+  "version": "1.0.0",
+  "description": "CooDance Desktop Studio for Windows and macOS",
+  "author": "CooDance Contributors",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsc -p tsconfig.json && electron .",
+    "package:win": "electron-builder --config electron-builder.yml --win",
+    "package:mac": "electron-builder --config electron-builder.yml --mac",
+    "package:linux": "electron-builder --config electron-builder.yml --linux"
+  },
+  "dependencies": {
+    "@coodance/server": "*"
+  },
+  "devDependencies": {
+    "electron": "^35.2.0",
+    "electron-builder": "^26.0.12"
+  }
+}

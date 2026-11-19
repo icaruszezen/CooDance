@@ -1,0 +1,31 @@
+{
+  "name": "@coodance/core",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@lobehub/icons-static-svg": "^1.104.0",
+    "@remotion/bundler": "4.0.414",
+    "@remotion/cli": "4.0.414",
+    "@remotion/renderer": "4.0.414",
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0",
+    "simple-icons": "^16.38.0",
+    "ws": "^8.18.2",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}

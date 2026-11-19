@@ -1,0 +1,66 @@
+appId: app.coodance.studio
+productName: CooDance Studio
+copyright: Copyright © 2026 CooDance Contributors
+electronVersion: "35.7.5"
+npmRebuild: false
+publish: null
+directories:
+  output: ../../release
+  buildResources: build-resources
+files:
+  - dist/**/*
+  - package.json
+extraResources:
+  - from: ../web/dist
+    to: apps/web/dist
+  - from: ../../packages/remotion/src
+    to: packages/remotion/src
+  - from: ../../packages/remotion/package.json
+    to: packages/remotion/package.json
+asar: true
+asarUnpack:
+  - "**/ffmpeg-static/**"
+  - "**/ffprobe-static/**"
+  - "**/@remotion/compositor-*/**"
+  - "**/@remotion/bundler/**"
+  - "**/@remotion/renderer/**"
+mac:
+  category: public.app-category.video
+  icon: build-resources/icon.png
+  identity: null
+  artifactName: CooDance-Studio-${version}-mac-${arch}.${ext}
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
+      arch:
+        - arm64
+        - x64
+  darkModeSupport: true
+dmg:
+  title: CooDance Studio
+win:
+  icon: build-resources/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+nsis:
+  artifactName: CooDance-Studio-${version}-win-${arch}-setup.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+portable:
+  artifactName: CooDance-Studio-${version}-win-${arch}-portable.${ext}
+linux:
+  icon: build-resources/icon.png
+  artifactName: CooDance-Studio-${version}-linux-${arch}.${ext}
+  target:
+    - AppImage
+  category: AudioVideo

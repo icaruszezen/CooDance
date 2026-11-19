@@ -1,0 +1,136 @@
+name: Build & Release CooDance
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-verify:
+    name: Build Web & Verify CLI Pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies (skip Electron binary on Linux build check)
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: npm ci
+      - name: Typecheck all workspaces
+        run: npm run typecheck
+      - name: Build all workspaces
+        run: npm run build
+      - name: Run 5-stage Code-as-Video CLI smoke test
+        env:
+          COODANCE_WORKSPACE: /tmp/coodance-ci-workspace
+          COODANCE_CONFIG_DIR: /tmp/coodance-ci-config
+        run: |
+          git config --global user.name "CooDance CI"
+          git config --global user.email "ci@coodance.local"
+          node scripts/init-project.mjs ci-smoke --demo
+          node scripts/tts.mjs ci-smoke --provider local --speed 1.05
+          node scripts/fetch-logo.mjs ci-smoke github --name github
+          node scripts/fetch-tg-emoji.mjs ci-smoke audio-bars --name audio-bars
+          node scripts/generate-sfx.mjs ci-smoke click
+          node scripts/inspect-assets.mjs ci-smoke --thumbs 4
+          node scripts/snapshot.mjs ci-smoke "CI smoke verification"
+          node scripts/snapshot.mjs ci-smoke --list
+
+  build-desktop:
+    name: Build Desktop (${{ matrix.label }})
+    needs: build-and-verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64
+            os: windows-latest
+            cmd: npm run desktop:build:win
+            artifact: CooDance-Windows-x64
+          - label: macOS arm64 & x64
+            os: macos-latest
+            cmd: npm run desktop:build:mac
+            artifact: CooDance-macOS-Universal
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build and package desktop installers
+        run: ${{ matrix.cmd }}
+      - name: List generated release artifacts
+        shell: bash
+        run: ls -lh release/
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: [build-and-verify, build-desktop]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-release
+          merge-multiple: true
+      - name: Generate SHA256 checksums
+        working-directory: dist-release
+        run: |
+          ls -lh
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat << 'EOF' > /tmp/release-notes.md
+          ## CooDance Studio ${TAG}
+
+          **纯代码化（Code-as-Video）16:9 自动化视频生产工作台与管线**，统一支持 **Web 自托管、Windows 桌面、macOS 桌面** 与 **全套兼容 CLI 脚本**。
+
+          ### 核心特性
+          - **5 阶段自动化视频管线**：项目初始化 (`init-project.mjs`) → 逐句 TTS 哈希缓存 + 10ms RMS 静音/气口裁切 (`tts.mjs`) → FFprobe 素材清单与均匀抽帧场记 (`inspect-assets.mjs`) → 声明式分镜与资源扩展 (`fetch-logo.mjs` / `fetch-tg-emoji.mjs` / `generate-sfx.mjs`) → Remotion 4.0.414 无头 H.264 MP4 渲染 (`render-project.mjs`) 与独立工程 Git 时间戳快照 (`snapshot.mjs`)。
+          - **可视化创作工作台**：内嵌 `@remotion/player` 16:9 实时预览、5 轨同步时间轴、画面拖拽框选局部缩放 (`zoomRegion`)、视频缩略图一键绑定 `trimStartSec`，以及属性表单与 `edit_plan.json` 源码双向热同步。
+          - **多引擎配音与零配置开箱即用**：主推火山引擎豆包语音合成 2.0 (`seed-tts-2.0`)，支持 Edge-TTS 与本地离线节奏语音降级；桌面安装包内置 `ffmpeg-static` / `ffprobe-static`。
+          - **Web / Docker 自托管**：执行 `docker compose up -d` 或 `npm ci && npm run build && npm start` 即可部署个人/私有 Web 工作台。
+
+          ### 下载说明
+          - **Windows (x64)**：`*-win-x64-setup.exe`（安装版）或 `*-win-x64-portable.exe`（免安装便携版）
+          - **macOS (Apple Silicon / Intel)**：`*-mac-arm64.dmg`（M 系列芯片）或 `*-mac-x64.dmg`（Intel 芯片）
+          - **校验文件**：`SHA256SUMS.txt`
+          EOF
+          sed -i "s/\${TAG}/${TAG}/g" /tmp/release-notes.md
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release edit "${TAG}" --title "CooDance Studio ${TAG}" --notes-file /tmp/release-notes.md
+            gh release upload "${TAG}" dist-release/* --clobber
+          else
+            gh release create "${TAG}" dist-release/* \
+              --title "CooDance Studio ${TAG}" \
+              --notes-file /tmp/release-notes.md \
+              --generate-notes
+          fi
