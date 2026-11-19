@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 permissions:
   contents: write
 
@@ -23,10 +27,8 @@ jobs:
       - name: Install dependencies (skip Electron binary on Linux build check)
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-        run: npm ci
-      - name: Typecheck all workspaces
-        run: npm run typecheck
-      - name: Build all workspaces
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck & build all workspaces
         run: npm run build
       - name: Run 5-stage Code-as-Video CLI smoke test
         env:
@@ -64,7 +66,6 @@ jobs:
 
   build-desktop:
     name: Build Desktop (${{ matrix.label }})
-    needs: build-and-verify
     strategy:
       fail-fast: false
       matrix:
@@ -73,21 +74,44 @@ jobs:
             os: windows-latest
             cmd: npm run desktop:build:win
             artifact: CooDance-Windows-x64
-          - label: macOS arm64 & x64
+            cache_paths: |
+              ~/AppData/Local/electron/Cache
+              ~/AppData/Local/electron-builder/Cache
+          - label: macOS arm64
             os: macos-latest
-            cmd: npm run desktop:build:mac
-            artifact: CooDance-macOS-Universal
+            cmd: npm run desktop:build:mac:arm64
+            artifact: CooDance-macOS-arm64
+            cache_paths: |
+              ~/Library/Caches/electron
+              ~/Library/Caches/electron-builder
+          - label: macOS x64
+            os: macos-15-intel
+            cmd: npm run desktop:build:mac:x64
+            artifact: CooDance-macOS-x64
+            cache_paths: |
+              ~/Library/Caches/electron
+              ~/Library/Caches/electron-builder
     runs-on: ${{ matrix.os }}
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      ELECTRON_BUILDER_COMPRESSION_LEVEL: '5'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+      - name: Cache Electron & electron-builder binaries
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.cache_paths }}
+          key: electron-builder-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/electron-builder.yml', 'package-lock.json') }}
+          restore-keys: |
+            electron-builder-${{ runner.os }}-${{ runner.arch }}-
       - name: Install dependencies
-        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: npm ci --no-audit --no-fund
       - name: Build and package desktop installers
         run: ${{ matrix.cmd }}
       - name: Smoke-test packaged Electron app & offline MCP stdio
@@ -204,6 +228,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
+          compression-level: 0
           path: |
             release/*.exe
             release/*.dmg
@@ -252,7 +277,7 @@ jobs:
           - **Web / Docker 自托管**：执行 `docker compose up -d` 或 `npm ci && npm run build && npm start` 即可部署个人/私有 Web 工作台与远程 Bearer 鉴权 MCP 端点。
 
           ### 下载说明
-          - **Windows (x64)**：`*-win-x64-setup.exe`（安装版）或 `*-win-x64-portable.exe`（免安装便携版）
+          - **Windows (x64)**：`*-win-x64-setup.exe`（安装版）或 `*-win-x64-portable.zip`（免安装便携版，解压即用）
           - **macOS (Apple Silicon / Intel)**：`*-mac-arm64.dmg`（M 系列芯片）或 `*-mac-x64.dmg`（Intel 芯片）
           - **校验文件**：`SHA256SUMS.txt`
           EOF

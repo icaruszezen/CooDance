@@ -66,7 +66,7 @@ docker compose up -d --build
 # 本地启动 Electron 桌面端
 npm run desktop:dev
 
-# 打包 Windows 安装包 (.exe NSIS + Portable)
+# 打包 Windows 安装包 (.exe NSIS + .zip 便携版)
 npm run desktop:build:win
 
 # 打包 macOS 安装包 (arm64 + x64 .dmg)
@@ -355,7 +355,7 @@ npm run snapshot -- my-video --restore snap-20261118-183000 --file edit_plan.jso
 | `packages/remotion` | React 19 + Remotion `4.0.414` 16:9 视频合成组件库（标题卡、录屏裁剪与局部推镜、图片运镜、分屏对比、数据/终端/管线 UI、网页 DOM 还原演示、Lottie/Logo/Callout 标注层、章节进度条、动态字幕层，内置 3 套视觉主题） |
 | `apps/server` | Express 5 + WebSocket 引擎（Range 媒体流、多文件上传、Streamable HTTP `/mcp` 端点、Chokidar 磁盘双向热监听、可选 Web 访问口令） |
 | `apps/web` | 统一 React 19 + Vite 暗/亮双色创作工作台（内置「Agent 接入中心」一键安装弹窗与 Skill 压缩包导出） |
-| `apps/desktop` | Electron 桌面外壳 + `electron-builder` 打包配置（Windows `.exe` NSIS/Portable、macOS arm64+x64 `.dmg`，支持可选固定本地 MCP 端口 `4170` 与 `ELECTRON_RUN_AS_NODE=1` 零依赖离线 `stdio` MCP） |
+| `apps/desktop` | Electron 桌面外壳 + `electron-builder` 打包配置（Windows `.exe` NSIS / `.zip` 便携版、macOS arm64+x64 `.dmg`，支持可选固定本地 MCP 端口 `4170` 与 `ELECTRON_RUN_AS_NODE=1` 零依赖离线 `stdio` MCP） |
 | `scripts/*.mjs` | 完整保留 10 个命令行脚本入口（含 `validate-edit-plan.mjs`），与工作台和 MCP 共享 `@coodance/core` |
 
 ---
