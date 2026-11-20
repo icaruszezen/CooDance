@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import type { DesktopEditAction, DesktopViewAction, DesktopWindowStateDto } from '../api';
 import { UiLang, t } from '../i18n';
+import { BrandMark } from './BrandMark';
 
 export type StageTab = 'script' | 'assets' | 'storyboard' | 'render';
 
@@ -305,7 +306,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setMenuOpen((prev) => !prev)}
             >
-              <span className="brand-mark">CD</span>
+              <BrandMark size="sm" />
               <h1 className="brand-title">CooDance</h1>
               <span className="brand-menu-chevron" aria-hidden="true">
                 <ChevronDown size={13} />
@@ -450,7 +451,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
           </div>
         ) : (
           <div className="brand-group">
-            <div className="brand-mark">CD</div>
+            <BrandMark size="sm" />
             <h1 className="brand-title">CooDance</h1>
             <span className="brand-badge">{platformLabel}</span>
           </div>

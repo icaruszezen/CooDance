@@ -13,6 +13,7 @@ import {
 } from './api';
 import { UiLang, t } from './i18n';
 import { DesktopWindowControls, StageTab, StudioTitleBar } from './components/StudioTitleBar';
+import { BrandMark } from './components/BrandMark';
 import { ProjectSidebar } from './components/ProjectSidebar';
 import { ScriptTtsView } from './components/ScriptTtsView';
 import { AssetInspectorView } from './components/AssetInspectorView';
@@ -248,7 +249,7 @@ export const App: React.FC = () => {
           <header className="studio-topbar is-desktop has-window-controls auth-topbar">
             <div className="topbar-left">
               <div className="brand-group">
-                <div className="brand-mark">CD</div>
+                <BrandMark size="sm" />
                 <h1 className="brand-title">CooDance</h1>
               </div>
             </div>
@@ -263,7 +264,10 @@ export const App: React.FC = () => {
         ) : null}
         <div className="empty-stage" style={{ flex: 1 }}>
           <div className="panel-card" style={{ width: 380, padding: 22, gap: 14 }}>
-            <h2 className="panel-title">CooDance Web 访问认证</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <BrandMark size="md" />
+              <h2 className="panel-title" style={{ margin: 0 }}>CooDance Web 访问认证</h2>
+            </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', textAlign: 'left' }}>
               当前自托管服务启用了访问口令保护，请输入 <code className="mono">COODANCE_ACCESS_TOKEN</code>。
             </div>
@@ -392,9 +396,7 @@ export const App: React.FC = () => {
         {/* Workspace Active View or Empty Welcome State */}
         {!workspace ? (
           <div className="empty-stage">
-            <div className="brand-mark" style={{ width: 52, height: 52, fontSize: 22, borderRadius: 14 }}>
-              CD
-            </div>
+            <BrandMark size="lg" />
             <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>
               {t(lang, 'emptyTitle')}
             </h2>
