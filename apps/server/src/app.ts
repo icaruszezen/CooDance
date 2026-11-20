@@ -12,6 +12,7 @@ import {
   AppSettings,
   AssetsManifest,
   AudioTimeline,
+  BUILTIN_UPDATE_MIRRORS,
   EditPlan,
   ImportAssetOptions,
   InstallAgentOptions,
@@ -19,15 +20,19 @@ import {
   RenderJobManager,
   SFX_PRESETS,
   SfxPresetId,
+  UpdateCheckResult,
+  UpdateMirrorMode,
   buildAgentContextPrompt,
   buildSkillZipBuffer,
   checkFfmpegHealth,
+  checkForUpdates,
   createProjectSnapshot,
   fetchAndSaveLogo,
   fetchAndSaveLottie,
   generateAiEditPlan,
   generateProjectSfx,
   getAgentIntegrationInfo,
+  getAppVersion,
   getProjectSummary,
   getSnapshotDiff,
   importProjectAsset,
@@ -38,6 +43,7 @@ import {
   listProjects,
   loadSettings,
   maskSettingsForClient,
+  probeUpdateMirrors,
   readSkillBundleFiles,
   renderProjectVideo,
   resolveProjectPaths,
@@ -183,13 +189,17 @@ export async function startStudioServer(
     res.status(401).json({ error: 'Unauthorized: invalid or missing access token' });
   });
 
+  let lastUpdateCheck: UpdateCheckResult | null = null;
+  const appVersion = getAppVersion();
+
   // 1. Health & Diagnostics
   app.get('/api/health', async (_req, res) => {
     const ffmpeg = await checkFfmpegHealth(settings.ffmpeg);
     res.json({
       ok: true,
-      version: '1.1.3',
+      version: appVersion,
       platform: process.platform,
+      arch: process.arch,
       nodeVersion: process.version,
       workspaceDir: settings.workspaceDir,
       authRequired: Boolean(settings.security.webAccessToken),
@@ -254,6 +264,100 @@ export async function startStudioServer(
       hub.watchWorkspace(settings.workspaceDir);
       const ffmpeg = await checkFfmpegHealth(settings.ffmpeg);
       res.json({ settings: maskSettingsForClient(settings), ffmpeg });
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  // 2.5 Auto-Update Status, Version Check & China Mirror Latency Probe (Web / Shared)
+  app.get('/api/update/status', (_req, res) => {
+    res.json({
+      currentVersion: appVersion,
+      isDesktop: Boolean(options.isDesktop),
+      platform: process.platform,
+      arch: process.arch,
+      updateSettings: settings.update,
+      mirrors: BUILTIN_UPDATE_MIRRORS,
+      lastCheck: lastUpdateCheck,
+    });
+  });
+
+  app.post('/api/update/check', async (req, res) => {
+    try {
+      const body = (req.body || {}) as {
+        mirrorMode?: UpdateMirrorMode;
+        customMirrorPrefix?: string;
+        includePrerelease?: boolean;
+      };
+      const effectiveUpdateSettings = {
+        ...settings.update,
+        ...(body.mirrorMode ? { mirrorMode: body.mirrorMode } : {}),
+        ...(typeof body.customMirrorPrefix === 'string'
+          ? { customMirrorPrefix: body.customMirrorPrefix.trim() }
+          : {}),
+        ...(typeof body.includePrerelease === 'boolean'
+          ? { includePrerelease: body.includePrerelease }
+          : {}),
+      };
+      const result = await checkForUpdates({
+        settings: effectiveUpdateSettings,
+        target: {
+          isDesktop: Boolean(options.isDesktop),
+          platform: process.platform,
+          arch: process.arch,
+          installKind: options.isDesktop ? 'nsis' : 'web',
+          currentVersion: appVersion,
+        },
+      });
+      lastUpdateCheck = result;
+      settings = saveSettings({
+        update: {
+          ...settings.update,
+          lastCheckedAt: result.checkedAt,
+        },
+      });
+      res.json({ result, updateSettings: settings.update });
+    } catch (err) {
+      res.status(502).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post('/api/update/test-mirrors', async (req, res) => {
+    try {
+      const body = (req.body || {}) as {
+        mirrorMode?: UpdateMirrorMode;
+        customMirrorPrefix?: string;
+      };
+      const results = await probeUpdateMirrors({
+        mirrorMode: body.mirrorMode || settings.update.mirrorMode,
+        customMirrorPrefix:
+          typeof body.customMirrorPrefix === 'string'
+            ? body.customMirrorPrefix
+            : settings.update.customMirrorPrefix,
+      });
+      res.json({ results });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  app.post('/api/update/skip', (req, res) => {
+    try {
+      const body = (req.body || {}) as { version?: string };
+      const version = typeof body.version === 'string' ? body.version.trim() : '';
+      settings = saveSettings({
+        update: {
+          ...settings.update,
+          skippedVersion: version,
+        },
+      });
+      if (lastUpdateCheck) {
+        lastUpdateCheck = {
+          ...lastUpdateCheck,
+          isSkipped: Boolean(version && version.replace(/^v/i, '') === lastUpdateCheck.latestVersion),
+        };
+      }
+      res.json({ updateSettings: settings.update, lastCheck: lastUpdateCheck });
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
     }

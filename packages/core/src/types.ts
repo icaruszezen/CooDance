@@ -342,6 +342,137 @@ export interface RenderResult {
   snapshotTag?: string;
 }
 
+export type UpdateMirrorMode = 'auto' | 'cn-only' | 'custom' | 'direct';
+
+export type UpdateInstallKind = 'nsis' | 'portable-zip' | 'dmg' | 'appimage' | 'web';
+
+export interface AppUpdateSettings {
+  autoCheck: boolean;
+  autoDownload: boolean;
+  includePrerelease: boolean;
+  mirrorMode: UpdateMirrorMode;
+  customMirrorPrefix: string;
+  skippedVersion: string;
+  lastCheckedAt?: string;
+}
+
+export interface UpdateMirrorNode {
+  id: string;
+  label: string;
+  region: 'cn' | 'hk' | 'custom' | 'direct';
+  prefix: string;
+}
+
+export interface UpdateAssetInfo {
+  name: string;
+  size: number;
+  sha256?: string;
+  downloadUrl: string;
+  platform?: 'win32' | 'darwin' | 'linux';
+  arch?: 'x64' | 'arm64';
+  installKind?: Exclude<UpdateInstallKind, 'web'>;
+}
+
+export interface UpdateManifest {
+  schemaVersion: 1;
+  repo: string;
+  version: string;
+  tag: string;
+  name: string;
+  publishedAt: string;
+  prerelease: boolean;
+  releaseUrl: string;
+  releaseNotes: string;
+  assets: UpdateAssetInfo[];
+}
+
+export interface UpdateRuntimeTarget {
+  isDesktop: boolean;
+  platform: NodeJS.Platform;
+  arch: string;
+  installKind: UpdateInstallKind;
+  currentVersion: string;
+}
+
+export interface UpdateCheckResult {
+  currentVersion: string;
+  latestVersion: string;
+  latestTag: string;
+  releaseName: string;
+  updateAvailable: boolean;
+  isPrerelease: boolean;
+  isSkipped: boolean;
+  publishedAt: string;
+  releaseUrl: string;
+  releaseNotes: string;
+  sourceNode: {
+    id: string;
+    label: string;
+    region: UpdateMirrorNode['region'];
+  };
+  manifestSource: 'update-manifest' | 'releases-atom' | 'github-api' | 'custom-manifest';
+  matchedAsset: UpdateAssetInfo | null;
+  allAssets: UpdateAssetInfo[];
+  checkedAt: string;
+  target: UpdateRuntimeTarget;
+}
+
+export interface UpdateMirrorTestResult {
+  id: string;
+  label: string;
+  region: UpdateMirrorNode['region'];
+  prefix: string;
+  ok: boolean;
+  latencyMs: number | null;
+  statusCode?: number;
+  error?: string;
+}
+
+export type DesktopUpdatePhase =
+  | 'idle'
+  | 'checking'
+  | 'up-to-date'
+  | 'available'
+  | 'downloading'
+  | 'verifying'
+  | 'ready'
+  | 'installing'
+  | 'error';
+
+export interface DesktopUpdateDownloadState {
+  assetName: string;
+  totalBytes: number;
+  downloadedBytes: number;
+  percent: number;
+  speedBytesPerSec: number;
+  etaSec: number | null;
+  activeMirrorId: string;
+  activeMirrorLabel: string;
+  attempt: number;
+  maxAttempts: number;
+  resumed: boolean;
+  filePath?: string;
+  verifiedSha256?: string;
+}
+
+export interface DesktopUpdateStatus {
+  phase: DesktopUpdatePhase;
+  currentVersion: string;
+  target: UpdateRuntimeTarget;
+  checkResult: UpdateCheckResult | null;
+  download: DesktopUpdateDownloadState | null;
+  error: string | null;
+  lastCheckedAt: string | null;
+}
+
+export interface DesktopInstallActionResult {
+  ok: boolean;
+  action: 'launched-nsis' | 'revealed-portable-zip' | 'opened-dmg' | 'revealed-appimage';
+  filePath: string;
+  message: string;
+  canQuitNow?: boolean;
+}
+
 export interface AppSettings {
   workspaceDir: string;
   language: 'zh-CN' | 'en-US';
@@ -384,6 +515,7 @@ export interface AppSettings {
     autoSnapshotOnAgentWrite: boolean;
     allowPaidTtsFromAgent: boolean;
   };
+  update: AppUpdateSettings;
 }
 
 export interface ProgressEvent {

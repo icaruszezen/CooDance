@@ -1,4 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type {
+  DesktopInstallActionResult,
+  DesktopUpdateStatus,
+  UpdateMirrorMode,
+  UpdateMirrorTestResult,
+} from '@coodance/core';
 
 export interface WindowStateSnapshot {
   isMaximized: boolean;
@@ -20,6 +26,7 @@ export type DesktopViewAction =
 contextBridge.exposeInMainWorld('coodanceDesktop', {
   isDesktop: true,
   platform: process.platform,
+  arch: process.arch,
   customTitleBar: process.platform !== 'darwin',
   selectDirectory: () => ipcRenderer.invoke('coodance:select-directory') as Promise<string | null>,
   revealPath: (targetPath: string) =>
@@ -60,6 +67,49 @@ contextBridge.exposeInMainWorld('coodanceDesktop', {
     ipcRenderer.on('coodance:zoom-changed', handler);
     return () => {
       ipcRenderer.removeListener('coodance:zoom-changed', handler);
+    };
+  },
+  // Auto-Updater IPC Bridge
+  getUpdateState: () =>
+    ipcRenderer.invoke('coodance:update-get-state') as Promise<DesktopUpdateStatus>,
+  checkForUpdates: (opts?: {
+    manual?: boolean;
+    mirrorMode?: UpdateMirrorMode;
+    customMirrorPrefix?: string;
+    includePrerelease?: boolean;
+  }) => ipcRenderer.invoke('coodance:update-check', opts) as Promise<DesktopUpdateStatus>,
+  startUpdateDownload: () =>
+    ipcRenderer.invoke('coodance:update-download') as Promise<DesktopUpdateStatus>,
+  cancelUpdateDownload: () =>
+    ipcRenderer.invoke('coodance:update-cancel') as Promise<DesktopUpdateStatus>,
+  installUpdate: () =>
+    ipcRenderer.invoke('coodance:update-install') as Promise<DesktopInstallActionResult>,
+  quitForUpdateInstall: () =>
+    ipcRenderer.invoke('coodance:update-quit-for-install') as Promise<void>,
+  skipUpdateVersion: (version: string) =>
+    ipcRenderer.invoke('coodance:update-skip-version', version) as Promise<DesktopUpdateStatus>,
+  testUpdateMirrors: (draft?: {
+    mirrorMode?: UpdateMirrorMode;
+    customMirrorPrefix?: string;
+  }) => ipcRenderer.invoke('coodance:update-test-mirrors', draft) as Promise<UpdateMirrorTestResult[]>,
+  revealDownloadedUpdate: () =>
+    ipcRenderer.invoke('coodance:update-reveal-download') as Promise<void>,
+  onUpdateStatusChange: (listener: (status: DesktopUpdateStatus) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, status: DesktopUpdateStatus) => {
+      listener(status);
+    };
+    ipcRenderer.on('coodance:update-status', handler);
+    return () => {
+      ipcRenderer.removeListener('coodance:update-status', handler);
+    };
+  },
+  onOpenUpdateModal: (listener: () => void) => {
+    const handler = () => {
+      listener();
+    };
+    ipcRenderer.on('coodance:open-update-modal', handler);
+    return () => {
+      ipcRenderer.removeListener('coodance:open-update-modal', handler);
     };
   },
 });

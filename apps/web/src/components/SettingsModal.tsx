@@ -1,30 +1,97 @@
-import React, { useState } from 'react';
-import { X, Save, CheckCircle2, AlertTriangle, FolderOpen, KeyRound } from 'lucide-react';
-import { FfmpegHealthDto, SettingsDto, setStoredToken } from '../api';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  X,
+  Save,
+  CheckCircle2,
+  AlertTriangle,
+  FolderOpen,
+  KeyRound,
+  RefreshCw,
+  Globe,
+  Gauge,
+  Loader2,
+  RotateCcw,
+} from 'lucide-react';
+import {
+  DesktopUpdateStatusDto,
+  FfmpegHealthDto,
+  SettingsDto,
+  UpdateMirrorMode,
+  UpdateMirrorTestResultDto,
+  setStoredToken,
+} from '../api';
 import { UiLang } from '../i18n';
 
 interface SettingsModalProps {
   lang: UiLang;
   settings: SettingsDto;
   ffmpeg: FfmpegHealthDto | null;
+  updateStatus: DesktopUpdateStatusDto;
+  focusSection?: 'general' | 'update';
   onClose: () => void;
   onSave: (next: SettingsDto) => Promise<void>;
+  onOpenUpdateCenter: () => void;
+  onTestMirrors: (draft: {
+    mirrorMode: UpdateMirrorMode;
+    customMirrorPrefix: string;
+  }) => Promise<UpdateMirrorTestResultDto[]>;
 }
+
+const DEFAULT_UPDATE_SETTINGS: SettingsDto['update'] = {
+  autoCheck: true,
+  autoDownload: false,
+  includePrerelease: false,
+  mirrorMode: 'auto',
+  customMirrorPrefix: '',
+  skippedVersion: '',
+};
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   lang,
   settings,
   ffmpeg,
+  updateStatus,
+  focusSection = 'general',
   onClose,
   onSave,
+  onOpenUpdateCenter,
+  onTestMirrors,
 }) => {
-  const [draft, setDraft] = useState<SettingsDto>(structuredClone(settings));
+  const [draft, setDraft] = useState<SettingsDto>(() => {
+    const cloned = structuredClone(settings);
+    cloned.update = { ...DEFAULT_UPDATE_SETTINGS, ...(cloned.update || {}) };
+    return cloned;
+  });
   const [saving, setSaving] = useState(false);
+  const [testingMirrors, setTestingMirrors] = useState(false);
+  const [mirrorProbeResults, setMirrorProbeResults] = useState<UpdateMirrorTestResultDto[] | null>(
+    null,
+  );
+  const updateSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (focusSection === 'update' && updateSectionRef.current) {
+      updateSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [focusSection]);
 
   const handlePickWorkspace = async () => {
     if (window.coodanceDesktop?.isDesktop) {
       const dir = await window.coodanceDesktop.selectDirectory();
       if (dir) setDraft({ ...draft, workspaceDir: dir });
+    }
+  };
+
+  const handleTestMirrors = async () => {
+    setTestingMirrors(true);
+    try {
+      const results = await onTestMirrors({
+        mirrorMode: draft.update.mirrorMode,
+        customMirrorPrefix: draft.update.customMirrorPrefix,
+      });
+      setMirrorProbeResults(results);
+    } finally {
+      setTestingMirrors(false);
     }
   };
 
@@ -317,6 +384,241 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span>允许外部 Agent 调用付费豆包 TTS</span>
               </label>
             </div>
+          </div>
+
+          {/* Auto-Update & China Acceleration Mirrors */}
+          <div
+            id="settings-update-section"
+            ref={updateSectionRef}
+            style={{
+              borderTop: '1px solid var(--border-subtle)',
+              paddingTop: 14,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Globe size={14} style={{ color: 'var(--cyan)' }} />
+                <span style={{ fontWeight: 700, fontSize: 12.5 }}>
+                  {lang === 'zh-CN'
+                    ? '自动更新与中国区加速线路'
+                    : 'Auto-Update & China Acceleration Mirrors'}
+                </span>
+                <span className="chip mono" style={{ fontSize: 10.5 }}>
+                  v{updateStatus.currentVersion}
+                </span>
+                {updateStatus.checkResult?.updateAvailable ? (
+                  <span className="chip chip-accent mono" style={{ fontSize: 10.5 }}>
+                    {lang === 'zh-CN' ? '新版本' : 'New'} v{updateStatus.checkResult.latestVersion}
+                  </span>
+                ) : null}
+              </div>
+
+              <button
+                id="btn-settings-check-update"
+                type="button"
+                className="btn btn-sm"
+                onClick={() => {
+                  onClose();
+                  onOpenUpdateCenter();
+                }}
+              >
+                <RefreshCw size={12} />
+                {lang === 'zh-CN' ? '打开更新中心' : 'Open Update Center'}
+              </button>
+            </div>
+
+            <div className="form-grid-2">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={draft.update.autoCheck !== false}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      update: { ...draft.update, autoCheck: e.target.checked },
+                    })
+                  }
+                />
+                <span>
+                  {lang === 'zh-CN'
+                    ? '启动时自动静默检查更新（每 12 小时复检）'
+                    : 'Auto-check on startup (recheck every 12h)'}
+                </span>
+              </label>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={Boolean(draft.update.includePrerelease)}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      update: { ...draft.update, includePrerelease: e.target.checked },
+                    })
+                  }
+                />
+                <span>
+                  {lang === 'zh-CN'
+                    ? '接收测试版（Pre-release）更新通道'
+                    : 'Include Pre-release (Beta) channel'}
+                </span>
+              </label>
+            </div>
+
+            {window.coodanceDesktop?.isDesktop ? (
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={Boolean(draft.update.autoDownload)}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      update: { ...draft.update, autoDownload: e.target.checked },
+                    })
+                  }
+                />
+                <span>
+                  {lang === 'zh-CN'
+                    ? '检测到新版本后在后台自动加速下载（约 200MB，下载并校验 SHA256 后提示安装）'
+                    : 'Auto-download update in background (~200MB, SHA256 verified before install)'}
+                </span>
+              </label>
+            ) : null}
+
+            <div className="form-grid-2">
+              <div>
+                <label className="field-label">
+                  {lang === 'zh-CN' ? '下载加速模式（中国大陆网络适配）' : 'Acceleration Mode'}
+                </label>
+                <select
+                  id="select-update-mirror-mode"
+                  className="select"
+                  value={draft.update.mirrorMode}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      update: {
+                        ...draft.update,
+                        mirrorMode: e.target.value as UpdateMirrorMode,
+                      },
+                    })
+                  }
+                >
+                  <option value="auto">
+                    {lang === 'zh-CN'
+                      ? '自动优选（国内加速 → 直连回退）'
+                      : 'Auto (China Mirrors -> GitHub Direct)'}
+                  </option>
+                  <option value="cn-only">
+                    {lang === 'zh-CN'
+                      ? '仅国内加速镜像（多节点自动切换）'
+                      : 'China Mirrors Only'}
+                  </option>
+                  <option value="custom">
+                    {lang === 'zh-CN' ? '仅使用自定义加速地址' : 'Custom Mirror Only'}
+                  </option>
+                  <option value="direct">
+                    {lang === 'zh-CN'
+                      ? 'GitHub 官方直连（海外/代理网络）'
+                      : 'GitHub Direct'}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="field-label">
+                  {lang === 'zh-CN'
+                    ? '自定义加速镜像前缀（可选，优先级最高）'
+                    : 'Custom Mirror Prefix (Optional)'}
+                </label>
+                <input
+                  id="input-custom-mirror-prefix"
+                  className="input mono"
+                  placeholder="https://gh-proxy.org/ 或 https://my-worker.dev/{url}"
+                  value={draft.update.customMirrorPrefix}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      update: {
+                        ...draft.update,
+                        customMirrorPrefix: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="update-mirror-probe-bar">
+              <button
+                id="btn-test-update-mirrors"
+                type="button"
+                className="btn btn-sm"
+                disabled={testingMirrors}
+                onClick={() => void handleTestMirrors()}
+              >
+                {testingMirrors ? <Loader2 size={12} className="spin-icon" /> : <Gauge size={12} />}
+                {testingMirrors
+                  ? lang === 'zh-CN'
+                    ? '正在探测各节点延迟...'
+                    : 'Testing mirror latency...'
+                  : lang === 'zh-CN'
+                    ? '测试加速节点延迟'
+                    : 'Test Mirror Latency'}
+              </button>
+
+              {draft.update.skippedVersion ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className="chip mono" style={{ fontSize: 11 }}>
+                    {lang === 'zh-CN' ? '已跳过' : 'Skipped'} v{draft.update.skippedVersion}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        update: { ...draft.update, skippedVersion: '' },
+                      })
+                    }
+                  >
+                    <RotateCcw size={11} />
+                    {lang === 'zh-CN' ? '恢复提醒' : 'Reset'}
+                  </button>
+                </div>
+              ) : null}
+
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                {lang === 'zh-CN'
+                  ? '所有第三方镜像下载均强制校验 SHA256'
+                  : 'All mirror downloads enforce SHA256 verification'}
+              </span>
+            </div>
+
+            {mirrorProbeResults ? (
+              <div id="mirror-probe-results" className="mirror-probe-grid">
+                {mirrorProbeResults.map((node) => (
+                  <div
+                    key={node.id}
+                    className={`mirror-probe-item ${node.ok ? 'ok' : 'fail'}`}
+                    title={node.error || node.prefix || 'https://github.com'}
+                  >
+                    <span className={`mirror-probe-dot ${node.ok ? 'ok' : 'fail'}`} />
+                    <span className="mirror-probe-label">{node.label}</span>
+                    <span className="mono mirror-probe-latency">
+                      {node.ok && node.latencyMs !== null
+                        ? `${node.latencyMs}ms`
+                        : lang === 'zh-CN'
+                          ? '不可达'
+                          : 'Fail'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
 

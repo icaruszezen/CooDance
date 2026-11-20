@@ -1,12 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Sparkles, FolderOpen, Radio } from 'lucide-react';
 import {
+  DesktopInstallActionResultDto,
+  DesktopUpdateStatusDto,
   DesktopWindowStateDto,
   FfmpegHealthDto,
   ProgressEventDto,
   ProjectSummaryDto,
   ProjectWorkspaceDto,
   SettingsDto,
+  UpdateCheckResultDto,
+  UpdateMirrorMode,
+  UpdateMirrorTestResultDto,
   apiRequest,
   connectStudioWs,
   setStoredToken,
@@ -21,6 +26,16 @@ import { StoryboardStudioView } from './components/StoryboardStudioView';
 import { RenderSnapshotsView } from './components/RenderSnapshotsView';
 import { SettingsModal } from './components/SettingsModal';
 import { AgentHubModal } from './components/AgentHubModal';
+import { UpdateModal } from './components/UpdateModal';
+
+const FALLBACK_UPDATE_SETTINGS: SettingsDto['update'] = {
+  autoCheck: true,
+  autoDownload: false,
+  includePrerelease: false,
+  mirrorMode: 'auto',
+  customMirrorPrefix: '',
+  skippedVersion: '',
+};
 
 export const App: React.FC = () => {
   const [lang, setLang] = useState<UiLang>('zh-CN');
@@ -38,7 +53,9 @@ export const App: React.FC = () => {
   const [tokenInput, setTokenInput] = useState('');
 
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsFocusSection, setSettingsFocusSection] = useState<'general' | 'update'>('general');
   const [showAgentHub, setShowAgentHub] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [busyDemo, setBusyDemo] = useState(false);
   const [liveProgress, setLiveProgress] = useState<ProgressEventDto | null>(null);
   const [renderLogs, setRenderLogs] = useState<ProgressEventDto[]>([]);
@@ -54,6 +71,23 @@ export const App: React.FC = () => {
     isFocused: true,
     appVersion: '',
   });
+  const [updateStatus, setUpdateStatus] = useState<DesktopUpdateStatusDto>({
+    phase: 'idle',
+    currentVersion: '1.2.0',
+    target: {
+      isDesktop: Boolean(window.coodanceDesktop?.isDesktop),
+      platform: window.coodanceDesktop?.platform || 'web',
+      arch: window.coodanceDesktop?.arch || 'x64',
+      installKind: window.coodanceDesktop?.isDesktop ? 'nsis' : 'web',
+      currentVersion: '1.2.0',
+    },
+    checkResult: null,
+    download: null,
+    error: null,
+    lastCheckedAt: null,
+  });
+
+  const isDesktop = Boolean(window.coodanceDesktop?.isDesktop);
 
   const notify = useCallback((msg: string, level: 'info' | 'success' | 'error' = 'info') => {
     setToast({ msg, level });
@@ -84,6 +118,208 @@ export const App: React.FC = () => {
       mounted = false;
       unsub?.();
     };
+  }, []);
+
+  // Desktop IPC Update Bridge Subscriptions
+  useEffect(() => {
+    const desktop = window.coodanceDesktop;
+    if (!desktop?.isDesktop) return;
+    let mounted = true;
+    void desktop.getUpdateState?.().then((st) => {
+      if (mounted && st) setUpdateStatus(st);
+    });
+    const unsubStatus = desktop.onUpdateStatusChange?.((st) => {
+      setUpdateStatus(st);
+    });
+    const unsubOpen = desktop.onOpenUpdateModal?.(() => {
+      setShowUpdateModal(true);
+    });
+    return () => {
+      mounted = false;
+      unsubStatus?.();
+      unsubOpen?.();
+    };
+  }, []);
+
+  const handleCheckUpdates = useCallback(
+    async (manual = true) => {
+      const desktop = window.coodanceDesktop;
+      if (desktop?.isDesktop && desktop.checkForUpdates) {
+        const next = await desktop.checkForUpdates({ manual });
+        if (next) setUpdateStatus(next);
+        return;
+      }
+
+      // Web / Docker self-hosted check
+      setUpdateStatus((prev) => ({ ...prev, phase: 'checking', error: null }));
+      try {
+        const res = await apiRequest<{
+          result: UpdateCheckResultDto;
+          updateSettings: SettingsDto['update'];
+        }>('/api/update/check', {
+          method: 'POST',
+          body: JSON.stringify({}),
+        });
+        setSettings((prev) => (prev ? { ...prev, update: res.updateSettings } : prev));
+        setUpdateStatus((prev) => ({
+          ...prev,
+          phase: res.result.updateAvailable ? 'available' : 'up-to-date',
+          currentVersion: res.result.currentVersion,
+          target: res.result.target,
+          checkResult: res.result,
+          download: null,
+          error: null,
+          lastCheckedAt: res.result.checkedAt,
+        }));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setUpdateStatus((prev) => ({
+          ...prev,
+          phase: manual ? 'error' : prev.phase === 'checking' ? 'idle' : prev.phase,
+          error: manual ? msg : prev.error,
+        }));
+      }
+    },
+    [],
+  );
+
+  // Web/Docker mode: initial status hydration + 5s delayed auto-check + 12h periodic check
+  useEffect(() => {
+    if (isDesktop || authNeeded) return;
+    let mounted = true;
+    void apiRequest<{
+      currentVersion: string;
+      platform: string;
+      arch: string;
+      lastCheck: UpdateCheckResultDto | null;
+    }>('/api/update/status')
+      .then((res) => {
+        if (!mounted) return;
+        setUpdateStatus((prev) => ({
+          ...prev,
+          currentVersion: res.currentVersion,
+          target: {
+            isDesktop: false,
+            platform: res.platform,
+            arch: res.arch,
+            installKind: 'web',
+            currentVersion: res.currentVersion,
+          },
+          checkResult: res.lastCheck || prev.checkResult,
+          phase: res.lastCheck
+            ? res.lastCheck.updateAvailable
+              ? 'available'
+              : 'up-to-date'
+            : prev.phase,
+          lastCheckedAt: res.lastCheck?.checkedAt || prev.lastCheckedAt,
+        }));
+      })
+      .catch(() => {
+        // non-fatal
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isDesktop, authNeeded]);
+
+  useEffect(() => {
+    if (isDesktop || authNeeded || !settings) return;
+    if (settings.update?.autoCheck === false) return;
+    const startupTimer = window.setTimeout(() => {
+      void handleCheckUpdates(false);
+    }, 5000);
+    const periodicTimer = window.setInterval(() => {
+      void handleCheckUpdates(false);
+    }, 12 * 60 * 60 * 1000);
+    return () => {
+      window.clearTimeout(startupTimer);
+      window.clearInterval(periodicTimer);
+    };
+  }, [isDesktop, authNeeded, settings?.update?.autoCheck, handleCheckUpdates]);
+
+  const handleStartUpdateDownload = useCallback(async () => {
+    const desktop = window.coodanceDesktop;
+    if (!desktop?.startUpdateDownload) return;
+    const next = await desktop.startUpdateDownload();
+    if (next) setUpdateStatus(next);
+  }, []);
+
+  const handleCancelUpdateDownload = useCallback(async () => {
+    const desktop = window.coodanceDesktop;
+    if (!desktop?.cancelUpdateDownload) return;
+    const next = await desktop.cancelUpdateDownload();
+    if (next) setUpdateStatus(next);
+    notify('已取消更新下载（已保留断点缓存）', 'info');
+  }, [notify]);
+
+  const handleInstallUpdate = useCallback(async (): Promise<DesktopInstallActionResultDto | null> => {
+    const desktop = window.coodanceDesktop;
+    if (!desktop?.installUpdate) return null;
+    try {
+      const res = await desktop.installUpdate();
+      notify(res.message, 'success');
+      return res;
+    } catch (err) {
+      notify(err instanceof Error ? err.message : String(err), 'error');
+      return null;
+    }
+  }, [notify]);
+
+  const handleQuitForInstall = useCallback(async () => {
+    await window.coodanceDesktop?.quitForUpdateInstall?.();
+  }, []);
+
+  const handleSkipUpdateVersion = useCallback(
+    async (version: string) => {
+      const desktop = window.coodanceDesktop;
+      if (desktop?.isDesktop && desktop.skipUpdateVersion) {
+        const next = await desktop.skipUpdateVersion(version);
+        if (next) setUpdateStatus(next);
+        setSettings((prev) =>
+          prev ? { ...prev, update: { ...(prev.update || FALLBACK_UPDATE_SETTINGS), skippedVersion: version } } : prev,
+        );
+      } else {
+        const res = await apiRequest<{
+          updateSettings: SettingsDto['update'];
+          lastCheck: UpdateCheckResultDto | null;
+        }>('/api/update/skip', {
+          method: 'POST',
+          body: JSON.stringify({ version }),
+        });
+        setSettings((prev) => (prev ? { ...prev, update: res.updateSettings } : prev));
+        setUpdateStatus((prev) => ({
+          ...prev,
+          checkResult: res.lastCheck || (prev.checkResult ? { ...prev.checkResult, isSkipped: Boolean(version) } : null),
+        }));
+      }
+      notify(version ? `已跳过 v${version} 的更新提醒` : '已恢复版本更新提醒', 'info');
+    },
+    [notify],
+  );
+
+  const handleTestUpdateMirrors = useCallback(
+    async (draft: {
+      mirrorMode: UpdateMirrorMode;
+      customMirrorPrefix: string;
+    }): Promise<UpdateMirrorTestResultDto[]> => {
+      const desktop = window.coodanceDesktop;
+      if (desktop?.isDesktop && desktop.testUpdateMirrors) {
+        return desktop.testUpdateMirrors(draft);
+      }
+      const res = await apiRequest<{ results: UpdateMirrorTestResultDto[] }>(
+        '/api/update/test-mirrors',
+        {
+          method: 'POST',
+          body: JSON.stringify(draft),
+        },
+      );
+      return res.results;
+    },
+    [],
+  );
+
+  const handleRevealUpdateDownload = useCallback(async () => {
+    await window.coodanceDesktop?.revealDownloadedUpdate?.();
   }, []);
 
   const loadProjectWorkspace = useCallback(async (slug: string) => {
@@ -303,12 +539,22 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         activeSlug={activeSlug}
         windowState={windowState}
+        updateStatus={updateStatus}
         onSelectTab={setActiveTab}
         onOpenAgentHub={() => setShowAgentHub(true)}
+        onOpenUpdateModal={() => {
+          setShowUpdateModal(true);
+          if (updateStatus.phase === 'idle') {
+            void handleCheckUpdates(true);
+          }
+        }}
         onQuickSnapshot={() => void handleQuickSnapshot()}
         onToggleLang={() => setLang((l) => (l === 'zh-CN' ? 'en-US' : 'zh-CN'))}
         onToggleTheme={() => setUiTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
-        onOpenSettings={() => setShowSettings(true)}
+        onOpenSettings={() => {
+          setSettingsFocusSection('general');
+          setShowSettings(true);
+        }}
         onWindowStateChange={setWindowState}
       />
 
@@ -478,8 +724,41 @@ export const App: React.FC = () => {
           lang={lang}
           settings={settings}
           ffmpeg={ffmpeg}
+          updateStatus={updateStatus}
+          focusSection={settingsFocusSection}
           onClose={() => setShowSettings(false)}
           onSave={handleSaveSettings}
+          onOpenUpdateCenter={() => {
+            setShowUpdateModal(true);
+            if (updateStatus.phase === 'idle') {
+              void handleCheckUpdates(true);
+            }
+          }}
+          onTestMirrors={handleTestUpdateMirrors}
+        />
+      ) : null}
+
+      {/* Software Update Center Modal */}
+      {showUpdateModal ? (
+        <UpdateModal
+          lang={lang}
+          isDesktop={isDesktop}
+          status={updateStatus}
+          updateSettings={settings?.update || FALLBACK_UPDATE_SETTINGS}
+          onClose={() => setShowUpdateModal(false)}
+          onCheckNow={() => handleCheckUpdates(true)}
+          onStartDownload={handleStartUpdateDownload}
+          onCancelDownload={handleCancelUpdateDownload}
+          onInstallNow={handleInstallUpdate}
+          onQuitForInstall={handleQuitForInstall}
+          onSkipVersion={handleSkipUpdateVersion}
+          onOpenSettings={() => {
+            setShowUpdateModal(false);
+            setSettingsFocusSection('update');
+            setShowSettings(true);
+          }}
+          onRevealDownload={handleRevealUpdateDownload}
+          onNotify={notify}
         />
       ) : null}
 

@@ -1,14 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ArrowUpCircle,
   Bot,
+  CheckCircle2,
   ChevronDown,
   Clapperboard,
   Clipboard,
   Copy,
+  Download,
   FileText,
   Film,
   Languages,
   Layers,
+  Loader2,
   Maximize2,
   Minimize2,
   Minus,
@@ -25,7 +29,12 @@ import {
   TextSelect,
   Undo2,
 } from 'lucide-react';
-import type { DesktopEditAction, DesktopViewAction, DesktopWindowStateDto } from '../api';
+import type {
+  DesktopEditAction,
+  DesktopUpdateStatusDto,
+  DesktopViewAction,
+  DesktopWindowStateDto,
+} from '../api';
 import { UiLang, t } from '../i18n';
 import { BrandMark } from './BrandMark';
 
@@ -37,8 +46,10 @@ interface StudioTitleBarProps {
   activeTab: StageTab;
   activeSlug: string | null;
   windowState: DesktopWindowStateDto;
+  updateStatus: DesktopUpdateStatusDto;
   onSelectTab: (tab: StageTab) => void;
   onOpenAgentHub: () => void;
+  onOpenUpdateModal: () => void;
   onQuickSnapshot: () => void;
   onToggleLang: () => void;
   onToggleTheme: () => void;
@@ -173,8 +184,10 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
   activeTab,
   activeSlug,
   windowState,
+  updateStatus,
   onSelectTab,
   onOpenAgentHub,
+  onOpenUpdateModal,
   onQuickSnapshot,
   onToggleLang,
   onToggleTheme,
@@ -439,11 +452,50 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                   </button>
                 </div>
 
+                <div className="app-menu-divider" />
+
+                <div className="app-menu-section">
+                  <button
+                    id="btn-menu-check-update"
+                    type="button"
+                    role="menuitem"
+                    className="app-menu-row"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenUpdateModal();
+                    }}
+                  >
+                    <span className="app-menu-item-main">
+                      <ArrowUpCircle size={13} />
+                      <span>{t(lang, 'menuCheckUpdate')}</span>
+                    </span>
+                    {updateStatus.phase === 'ready' && updateStatus.checkResult ? (
+                      <span className="chip chip-emerald mono" style={{ padding: '1px 6px', fontSize: 10 }}>
+                        v{updateStatus.checkResult.latestVersion}
+                      </span>
+                    ) : updateStatus.phase === 'downloading' && updateStatus.download ? (
+                      <span className="chip chip-cyan mono" style={{ padding: '1px 6px', fontSize: 10 }}>
+                        {Math.round(updateStatus.download.percent)}%
+                      </span>
+                    ) : updateStatus.checkResult?.updateAvailable ? (
+                      <span className="chip chip-accent mono" style={{ padding: '1px 6px', fontSize: 10 }}>
+                        v{updateStatus.checkResult.latestVersion}
+                      </span>
+                    ) : (
+                      <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                        v{windowState.appVersion || updateStatus.currentVersion}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
                 <div className="app-menu-footer">
                   <span className="status-dot" />
                   <span>{platformLabel}</span>
-                  {windowState.appVersion ? (
-                    <span className="mono app-menu-version">v{windowState.appVersion}</span>
+                  {windowState.appVersion || updateStatus.currentVersion ? (
+                    <span className="mono app-menu-version">
+                      v{windowState.appVersion || updateStatus.currentVersion}
+                    </span>
                   ) : null}
                 </div>
               </div>
@@ -453,7 +505,16 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
           <div className="brand-group">
             <BrandMark size="sm" />
             <h1 className="brand-title">CooDance</h1>
-            <span className="brand-badge">{platformLabel}</span>
+            <button
+              id="btn-web-version-badge"
+              type="button"
+              className="brand-badge brand-badge-btn"
+              title={t(lang, 'updateCenter')}
+              onClick={onOpenUpdateModal}
+            >
+              {platformLabel}
+              {updateStatus.currentVersion ? ` · v${updateStatus.currentVersion}` : ''}
+            </button>
           </div>
         )}
       </div>
@@ -488,6 +549,51 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
       {/* Right: Studio Actions + Custom Window Controls */}
       <div className="topbar-right">
         <div className="topbar-actions">
+          {updateStatus.phase === 'downloading' || updateStatus.phase === 'verifying' ? (
+            <button
+              id="btn-topbar-update-pill"
+              type="button"
+              className="btn btn-sm topbar-update-pill downloading"
+              title={t(lang, 'updateCenter')}
+              onClick={onOpenUpdateModal}
+            >
+              <Loader2 size={12} className="spin-icon" />
+              <span className="mono">
+                {updateStatus.phase === 'verifying'
+                  ? lang === 'zh-CN'
+                    ? '校验中'
+                    : 'Verifying'
+                  : `${t(lang, 'updateDownloadingShort')} ${Math.round(updateStatus.download?.percent || 0)}%`}
+              </span>
+            </button>
+          ) : updateStatus.phase === 'ready' && updateStatus.checkResult ? (
+            <button
+              id="btn-topbar-update-pill"
+              type="button"
+              className="btn btn-sm topbar-update-pill ready"
+              title={t(lang, 'updateCenter')}
+              onClick={onOpenUpdateModal}
+            >
+              <CheckCircle2 size={12} />
+              <span>
+                {t(lang, 'updateReadyShort')} v{updateStatus.checkResult.latestVersion}
+              </span>
+            </button>
+          ) : updateStatus.checkResult?.updateAvailable && !updateStatus.checkResult.isSkipped ? (
+            <button
+              id="btn-topbar-update-pill"
+              type="button"
+              className="btn btn-sm topbar-update-pill available"
+              title={t(lang, 'updateCenter')}
+              onClick={onOpenUpdateModal}
+            >
+              <Download size={12} />
+              <span>
+                {t(lang, 'updateAvailableShort')} v{updateStatus.checkResult.latestVersion}
+              </span>
+            </button>
+          ) : null}
+
           <button
             id="btn-open-agent-hub"
             type="button"
