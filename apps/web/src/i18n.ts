@@ -49,6 +49,12 @@ const DICT = {
     winMaximize: '最大化',
     winRestore: '向下还原',
     winClose: '关闭',
+    menuCheckUpdate: '检查更新',
+    updateCenter: '软件更新中心',
+    updateAvailableShort: '发现新版本',
+    updateDownloadingShort: '更新中',
+    updateReadyShort: '准备安装',
+    checkUpdateNow: '检查更新',
   },
   'en-US': {
     appSubtitle: 'Code-as-Video 16:9',
@@ -98,6 +104,12 @@ const DICT = {
     winMaximize: 'Maximize',
     winRestore: 'Restore',
     winClose: 'Close',
+    menuCheckUpdate: 'Check for Updates',
+    updateCenter: 'Software Updates',
+    updateAvailableShort: 'Update',
+    updateDownloadingShort: 'Updating',
+    updateReadyShort: 'Install Ready',
+    checkUpdateNow: 'Check Updates',
   },
 } as const;
 

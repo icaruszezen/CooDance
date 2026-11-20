@@ -211,7 +211,7 @@ jobs:
                 const timer = setTimeout(() => {
                   finish(new Error("Packaged MCP stdio smoke timed out after 30s.\nSTDOUT: " + stdout + "\nSTDERR: " + stderr));
                 }, 30000);
-                child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.1.3" } } }) + "\n");
+                child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.2.0" } } }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }) + "\n");
               });
@@ -267,11 +267,8 @@ jobs:
 
           **纯代码化（Code-as-Video）16:9 自动化视频生产工作台与管线**，统一支持 **Web 自托管、Windows 桌面、macOS 桌面** 与 **全套兼容 CLI 脚本**。
 
-          ### 本次更新（v1.1.3）
-          - **全新「极光棱镜（Aurora Prism）」品牌视觉升级**：全面替换原文字占位 `CD` 徽标，采用高精连续超椭圆（Squircle）透明圆角工艺重塑全平台品牌 Logo。
-          - **Web 工作台与桌面端全链路实装**：统一覆盖 Web 顶栏 / 桌面自定义标题栏（暗/亮双主题适配）、空状态欢迎页主视觉、访问口令认证页、浏览器多规格 Favicon（`favicon.png` / `favicon.ico` / `apple-touch-icon.png`），以及 Electron 1024×1024 安装包主图标、运行时窗口图标与离线极光渐变启动加载屏。
-
           ### 核心特性
+          - **自动检测更新与中国区多节点镜像加速**：内置多节点国内 GitHub 加速镜像池（`gh-proxy.org` / `hk.gh-proxy.org` / `ghfast.top` / `ghproxy.net`）自动探测故障切换并支持自定义镜像前缀，配合 `update-manifest.json`（零 GitHub API 限流）、断点续传、强制 SHA256 校验与跨平台安全更新引导（Windows NSIS 安装版/便携版自动识别、macOS arm64/x64 DMG）。
           - **外部 AI Agent 接入（MCP + Skill 协同引擎）**：内置 `@coodance/mcp`（11 个强校验 `coodance_*` 工具 + 4 个渐进式 Resources，同时支持 **Streamable HTTP `/mcp`** 与 **零依赖离线 `stdio` / `ELECTRON_RUN_AS_NODE=1`**），配套 5 阶段 `coodance-video-producer` Skill 规范包与工作台「Agent 接入中心」一键安全安装器（自动 `.bak` 备份合并 Cursor / Claude Code / Claude Desktop / Antigravity / Cherry Studio）。
           - **四大质量与安全护栏**：`edit_plan.json` 写前强校验门禁（Zod + 时间轴无断层/重叠 + 素材存在性 + `zoomRegion` 检查）、`coodance_import_asset` 统一外部素材入库（本地/URL/Base64/SVG 自动 FFprobe 探测）、写前自动 Git 快照、异步非阻塞渲染 Job + TTS 哈希缓存与付费豆包保护开关。
           - **5 阶段自动化视频管线**：项目初始化 (`init-project.mjs`) → 逐句 TTS 哈希缓存 + 10ms RMS 静音/气口裁切 (`tts.mjs`) → FFprobe 素材清单与均匀抽帧场记 (`inspect-assets.mjs`) → 声明式分镜校验与资源扩展 (`validate-edit-plan.mjs` / `fetch-logo.mjs` / `fetch-tg-emoji.mjs` / `generate-sfx.mjs`) → Remotion 4.0.414 无头 H.264 MP4 渲染 (`render-project.mjs`) 与独立工程 Git 时间戳快照 (`snapshot.mjs`)。
@@ -282,15 +279,26 @@ jobs:
           ### 下载说明
           - **Windows (x64)**：`*-win-x64-setup.exe`（安装版）或 `*-win-x64-portable.zip`（免安装便携版，解压即用）
           - **macOS (Apple Silicon / Intel)**：`*-mac-arm64.dmg`（M 系列芯片）或 `*-mac-x64.dmg`（Intel 芯片）
-          - **校验文件**：`SHA256SUMS.txt`
+          - **校验与更新清单**：`SHA256SUMS.txt`、`update-manifest.json`
           EOF
           sed -i "s/\${TAG}/${TAG}/g" /tmp/release-notes.md
+          node scripts/generate-update-manifest.mjs \
+            --dir dist-release \
+            --tag "${TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --notes-file /tmp/release-notes.md
+          cat dist-release/update-manifest.json
+          PRERELEASE_FLAG=""
+          if [[ "${TAG}" == *-* ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            gh release edit "${TAG}" --title "CooDance Studio ${TAG}" --notes-file /tmp/release-notes.md
+            gh release edit "${TAG}" --title "CooDance Studio ${TAG}" --notes-file /tmp/release-notes.md ${PRERELEASE_FLAG}
             gh release upload "${TAG}" dist-release/* --clobber
           else
             gh release create "${TAG}" dist-release/* \
               --title "CooDance Studio ${TAG}" \
               --notes-file /tmp/release-notes.md \
+              ${PRERELEASE_FLAG} \
               --generate-notes
           fi

@@ -20,4 +20,4 @@ export * from './editPlanValidator.js';
 export * from './importAsset.js';
 export * from './renderJobs.js';
 export * from './agentIntegration.js';
-
+export * from './updater.js';

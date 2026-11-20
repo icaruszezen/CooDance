@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, shell } from 'electron';
 import { BRAND_ICON_DATA_URI } from './brandIconDataUri';
+import { DesktopUpdateManager } from './updater';
 
 interface RunningServerHandle {
   port: number;
@@ -14,6 +15,15 @@ const isSmokeTest = process.env.COODANCE_SMOKE_TEST === '1';
 
 let mainWindow: BrowserWindow | null = null;
 let serverHandle: RunningServerHandle | null = null;
+let updateManager: DesktopUpdateManager | null = null;
+
+async function closeEmbeddedServer(): Promise<void> {
+  if (serverHandle) {
+    const handle = serverHandle;
+    serverHandle = null;
+    await handle.close().catch(() => {});
+  }
+}
 
 function buildSplashDataUrl(): string {
   const html = `<!doctype html>
@@ -540,6 +550,15 @@ function buildAppMenu(): void {
       label: app.name,
       submenu: [
         { role: 'about' },
+        {
+          label: '检查更新...',
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('coodance:open-update-modal');
+            }
+            void updateManager?.checkForUpdates({ manual: true });
+          },
+        },
         { type: 'separator' },
         { role: 'hide' },
         { role: 'hideOthers' },
@@ -724,6 +743,73 @@ ipcMain.handle('coodance:view-get-zoom', (event) => {
   return getZoomPercent(resolveSenderWindow(event));
 });
 
+function ensureUpdateManager(): DesktopUpdateManager {
+  if (!updateManager) {
+    updateManager = new DesktopUpdateManager({
+      getMainWindow: () => mainWindow,
+      closeEmbeddedServer,
+      resolveBundledPath,
+    });
+  }
+  return updateManager;
+}
+
+ipcMain.handle('coodance:update-get-state', () => {
+  return ensureUpdateManager().getStatus();
+});
+
+ipcMain.handle(
+  'coodance:update-check',
+  async (
+    _event,
+    opts?: {
+      manual?: boolean;
+      mirrorMode?: 'auto' | 'cn-only' | 'custom' | 'direct';
+      customMirrorPrefix?: string;
+      includePrerelease?: boolean;
+    },
+  ) => {
+    return ensureUpdateManager().checkForUpdates(opts || { manual: true });
+  },
+);
+
+ipcMain.handle('coodance:update-download', async () => {
+  return ensureUpdateManager().startDownload();
+});
+
+ipcMain.handle('coodance:update-cancel', () => {
+  return ensureUpdateManager().cancelDownload();
+});
+
+ipcMain.handle('coodance:update-install', async () => {
+  return ensureUpdateManager().installDownloadedUpdate();
+});
+
+ipcMain.handle('coodance:update-quit-for-install', async () => {
+  await ensureUpdateManager().quitForInstall();
+});
+
+ipcMain.handle('coodance:update-skip-version', async (_event, version: string) => {
+  return ensureUpdateManager().skipVersion(typeof version === 'string' ? version : '');
+});
+
+ipcMain.handle(
+  'coodance:update-test-mirrors',
+  async (
+    _event,
+    draft?: {
+      mirrorMode?: 'auto' | 'cn-only' | 'custom' | 'direct';
+      customMirrorPrefix?: string;
+    },
+  ) => {
+    return ensureUpdateManager().testMirrors(draft);
+  },
+);
+
+ipcMain.handle('coodance:update-reveal-download', () => {
+  ensureUpdateManager().revealDownloadedFile();
+});
+
 if (!isSmokeTest) {
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
@@ -747,6 +833,7 @@ app.whenReady().then(async () => {
     }
 
     await createMainWindow();
+    ensureUpdateManager().startScheduler();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -768,10 +855,7 @@ app.whenReady().then(async () => {
       mainWindow.destroy();
       mainWindow = null;
     }
-    if (serverHandle) {
-      await serverHandle.close().catch(() => {});
-      serverHandle = null;
-    }
+    await closeEmbeddedServer();
     app.exit(1);
   }
 });
@@ -783,8 +867,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', async () => {
-  if (serverHandle) {
-    await serverHandle.close();
-    serverHandle = null;
-  }
+  updateManager?.stopScheduler();
+  await closeEmbeddedServer();
 });

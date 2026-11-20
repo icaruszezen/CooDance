@@ -87,6 +87,15 @@ export function getDefaultSettings(): AppSettings {
       autoSnapshotOnAgentWrite: true,
       allowPaidTtsFromAgent: false,
     },
+    update: {
+      autoCheck: process.env.COODANCE_AUTO_UPDATE_DISABLED !== '1',
+      autoDownload: false,
+      includePrerelease: false,
+      mirrorMode: 'auto',
+      customMirrorPrefix: process.env.COODANCE_UPDATE_MIRROR || '',
+      skippedVersion: '',
+      lastCheckedAt: undefined,
+    },
   };
 }
 
@@ -94,6 +103,16 @@ function getSettingsPath(): string {
   const dir = getConfigDir();
   fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, 'settings.json');
+}
+
+function normalizeMirrorMode(
+  mode: unknown,
+  fallback: AppSettings['update']['mirrorMode'],
+): AppSettings['update']['mirrorMode'] {
+  if (mode === 'auto' || mode === 'cn-only' || mode === 'custom' || mode === 'direct') {
+    return mode;
+  }
+  return fallback;
 }
 
 export function loadSettings(): AppSettings {
@@ -146,6 +165,33 @@ export function loadSettings(): AppSettings {
             ? Math.round(raw.mcp.fixedPort)
             : defaults.mcp.fixedPort,
       },
+      update: {
+        ...defaults.update,
+        ...(raw.update || {}),
+        autoCheck:
+          typeof raw.update?.autoCheck === 'boolean'
+            ? raw.update.autoCheck
+            : defaults.update.autoCheck,
+        autoDownload:
+          typeof raw.update?.autoDownload === 'boolean'
+            ? raw.update.autoDownload
+            : defaults.update.autoDownload,
+        includePrerelease:
+          typeof raw.update?.includePrerelease === 'boolean'
+            ? raw.update.includePrerelease
+            : defaults.update.includePrerelease,
+        mirrorMode: normalizeMirrorMode(raw.update?.mirrorMode, defaults.update.mirrorMode),
+        customMirrorPrefix:
+          typeof raw.update?.customMirrorPrefix === 'string'
+            ? raw.update.customMirrorPrefix.trim()
+            : defaults.update.customMirrorPrefix,
+        skippedVersion:
+          typeof raw.update?.skippedVersion === 'string'
+            ? raw.update.skippedVersion.trim()
+            : defaults.update.skippedVersion,
+        lastCheckedAt:
+          typeof raw.update?.lastCheckedAt === 'string' ? raw.update.lastCheckedAt : undefined,
+      },
     };
     return merged;
   } catch {
@@ -194,6 +240,19 @@ export function saveSettings(partial: Partial<AppSettings>): AppSettings {
       ...current.mcp,
       ...(partial.mcp || {}),
       fixedPort: nextFixedPort,
+    },
+    update: {
+      ...current.update,
+      ...(partial.update || {}),
+      mirrorMode: normalizeMirrorMode(partial.update?.mirrorMode, current.update.mirrorMode),
+      customMirrorPrefix:
+        partial.update?.customMirrorPrefix !== undefined
+          ? partial.update.customMirrorPrefix.trim()
+          : current.update.customMirrorPrefix,
+      skippedVersion:
+        partial.update?.skippedVersion !== undefined
+          ? partial.update.skippedVersion.trim()
+          : current.update.skippedVersion,
     },
   };
 

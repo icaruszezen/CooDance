@@ -89,6 +89,123 @@ export interface ProjectWorkspaceDto {
   renders: RenderFileDto[];
 }
 
+export type UpdateMirrorMode = 'auto' | 'cn-only' | 'custom' | 'direct';
+export type UpdateInstallKind = 'nsis' | 'portable-zip' | 'dmg' | 'appimage' | 'web';
+
+export interface AppUpdateSettingsDto {
+  autoCheck: boolean;
+  autoDownload: boolean;
+  includePrerelease: boolean;
+  mirrorMode: UpdateMirrorMode;
+  customMirrorPrefix: string;
+  skippedVersion: string;
+  lastCheckedAt?: string;
+}
+
+export interface UpdateMirrorNodeDto {
+  id: string;
+  label: string;
+  region: 'cn' | 'hk' | 'custom' | 'direct';
+  prefix: string;
+}
+
+export interface UpdateAssetInfoDto {
+  name: string;
+  size: number;
+  sha256?: string;
+  downloadUrl: string;
+  platform?: 'win32' | 'darwin' | 'linux';
+  arch?: 'x64' | 'arm64';
+  installKind?: Exclude<UpdateInstallKind, 'web'>;
+}
+
+export interface UpdateRuntimeTargetDto {
+  isDesktop: boolean;
+  platform: string;
+  arch: string;
+  installKind: UpdateInstallKind;
+  currentVersion: string;
+}
+
+export interface UpdateCheckResultDto {
+  currentVersion: string;
+  latestVersion: string;
+  latestTag: string;
+  releaseName: string;
+  updateAvailable: boolean;
+  isPrerelease: boolean;
+  isSkipped: boolean;
+  publishedAt: string;
+  releaseUrl: string;
+  releaseNotes: string;
+  sourceNode: {
+    id: string;
+    label: string;
+    region: UpdateMirrorNodeDto['region'];
+  };
+  manifestSource: 'update-manifest' | 'releases-atom' | 'github-api' | 'custom-manifest';
+  matchedAsset: UpdateAssetInfoDto | null;
+  allAssets: UpdateAssetInfoDto[];
+  checkedAt: string;
+  target: UpdateRuntimeTargetDto;
+}
+
+export interface UpdateMirrorTestResultDto {
+  id: string;
+  label: string;
+  region: UpdateMirrorNodeDto['region'];
+  prefix: string;
+  ok: boolean;
+  latencyMs: number | null;
+  statusCode?: number;
+  error?: string;
+}
+
+export type DesktopUpdatePhase =
+  | 'idle'
+  | 'checking'
+  | 'up-to-date'
+  | 'available'
+  | 'downloading'
+  | 'verifying'
+  | 'ready'
+  | 'installing'
+  | 'error';
+
+export interface DesktopUpdateDownloadStateDto {
+  assetName: string;
+  totalBytes: number;
+  downloadedBytes: number;
+  percent: number;
+  speedBytesPerSec: number;
+  etaSec: number | null;
+  activeMirrorId: string;
+  activeMirrorLabel: string;
+  attempt: number;
+  maxAttempts: number;
+  resumed: boolean;
+  filePath?: string;
+  verifiedSha256?: string;
+}
+
+export interface DesktopUpdateStatusDto {
+  phase: DesktopUpdatePhase;
+  currentVersion: string;
+  target: UpdateRuntimeTargetDto;
+  checkResult: UpdateCheckResultDto | null;
+  download: DesktopUpdateDownloadStateDto | null;
+  error: string | null;
+  lastCheckedAt: string | null;
+}
+
+export interface DesktopInstallActionResultDto {
+  ok: boolean;
+  action: 'launched-nsis' | 'revealed-portable-zip' | 'opened-dmg' | 'revealed-appimage';
+  filePath: string;
+  message: string;
+  canQuitNow?: boolean;
+}
+
 export interface SettingsDto {
   workspaceDir: string;
   language: 'zh-CN' | 'en-US';
@@ -131,6 +248,7 @@ export interface SettingsDto {
     autoSnapshotOnAgentWrite: boolean;
     allowPaidTtsFromAgent: boolean;
   };
+  update: AppUpdateSettingsDto;
   secretsStatus?: {
     hasDoubaoToken: boolean;
     hasAiKey: boolean;
@@ -307,6 +425,7 @@ export type DesktopViewAction =
 export interface DesktopBridge {
   isDesktop: boolean;
   platform: string;
+  arch?: string;
   customTitleBar?: boolean;
   selectDirectory: () => Promise<string | null>;
   revealPath: (targetPath: string) => Promise<void>;
@@ -325,6 +444,25 @@ export interface DesktopBridge {
   }>;
   getZoomPercent?: () => Promise<number>;
   onZoomChange?: (listener: (zoomPercent: number) => void) => () => void;
+  getUpdateState?: () => Promise<DesktopUpdateStatusDto>;
+  checkForUpdates?: (opts?: {
+    manual?: boolean;
+    mirrorMode?: UpdateMirrorMode;
+    customMirrorPrefix?: string;
+    includePrerelease?: boolean;
+  }) => Promise<DesktopUpdateStatusDto>;
+  startUpdateDownload?: () => Promise<DesktopUpdateStatusDto>;
+  cancelUpdateDownload?: () => Promise<DesktopUpdateStatusDto>;
+  installUpdate?: () => Promise<DesktopInstallActionResultDto>;
+  quitForUpdateInstall?: () => Promise<void>;
+  skipUpdateVersion?: (version: string) => Promise<DesktopUpdateStatusDto>;
+  testUpdateMirrors?: (draft?: {
+    mirrorMode?: UpdateMirrorMode;
+    customMirrorPrefix?: string;
+  }) => Promise<UpdateMirrorTestResultDto[]>;
+  revealDownloadedUpdate?: () => Promise<void>;
+  onUpdateStatusChange?: (listener: (status: DesktopUpdateStatusDto) => void) => () => void;
+  onOpenUpdateModal?: (listener: () => void) => () => void;
 }
 
 declare global {
