@@ -1,7 +1,8 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, shell } from 'electron';
+import { BRAND_ICON_DATA_URI } from './brandIconDataUri';
 
 interface RunningServerHandle {
   port: number;
@@ -36,19 +37,23 @@ function buildSplashDataUrl(): string {
     }
     .card {
       display: flex; flex-direction: column; align-items: center; gap: 18px;
-      padding: 36px 44px; border-radius: 16px;
-      background: linear-gradient(180deg, rgba(24,28,38,0.88), rgba(15,18,24,0.92));
+      padding: 36px 44px; border-radius: 18px;
+      background: linear-gradient(180deg, rgba(24,28,38,0.88), rgba(15,18,24,0.94));
       border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 24px 64px rgba(0,0,0,0.48);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.52);
     }
     .badge {
-      width: 56px; height: 56px; border-radius: 14px;
-      background: linear-gradient(135deg, #f59e0b, #fb923c);
-      color: #0b0d11; font-weight: 800; font-size: 22px; letter-spacing: -0.5px;
+      width: 72px; height: 72px;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 8px 24px rgba(245,158,11,0.32);
+      position: relative;
     }
-    .title { font-size: 18px; font-weight: 600; letter-spacing: 0.2px; }
+    .badge img {
+      width: 72px; height: 72px;
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 24px rgba(245,158,11,0.22)) drop-shadow(0 6px 18px rgba(56,189,248,0.22));
+    }
+    .title { font-size: 18px; font-weight: 700; letter-spacing: 0.2px; }
     .sub { font-size: 13px; color: #94a3b8; }
     .bar {
       width: 220px; height: 4px; border-radius: 999px;
@@ -56,7 +61,7 @@ function buildSplashDataUrl(): string {
     }
     .bar-inner {
       width: 42%; height: 100%; border-radius: 999px;
-      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      background: linear-gradient(90deg, #f59e0b, #38bdf8, #fb7185);
       animation: slide 1.15s ease-in-out infinite;
     }
     @keyframes slide {
@@ -67,7 +72,7 @@ function buildSplashDataUrl(): string {
 </head>
 <body>
   <div class="card">
-    <div class="badge">CD</div>
+    <div class="badge"><img src="${BRAND_ICON_DATA_URI}" alt="CooDance Studio" /></div>
     <div class="title">CooDance Studio</div>
     <div class="sub">正在启动本地视频生产引擎...</div>
     <div class="bar"><div class="bar-inner"></div></div>
@@ -290,8 +295,23 @@ function resolveSenderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow 
   return BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
 }
 
+function resolveDesktopWindowIcon(): Electron.NativeImage {
+  const diskCandidates = [
+    path.resolve(__dirname, '../build-resources/icon.png'),
+    resolveBundledPath('apps', 'desktop', 'build-resources', 'icon.png'),
+  ];
+  for (const candidate of diskCandidates) {
+    if (fs.existsSync(candidate)) {
+      const img = nativeImage.createFromPath(candidate);
+      if (!img.isEmpty()) return img;
+    }
+  }
+  return nativeImage.createFromDataURL(BRAND_ICON_DATA_URI);
+}
+
 async function createMainWindow(): Promise<void> {
   const devUrl = process.env.COODANCE_DEV_URL;
+  const windowIcon = resolveDesktopWindowIcon();
 
   mainWindow = new BrowserWindow({
     width: 1460,
@@ -300,6 +320,7 @@ async function createMainWindow(): Promise<void> {
     minHeight: 720,
     show: !isSmokeTest,
     title: 'CooDance Studio — Code-as-Video 16:9',
+    icon: windowIcon,
     backgroundColor: '#0b0d11',
     ...(isMac
       ? {
