@@ -530,10 +530,9 @@ async function runSmokeTest(): Promise<void> {
     mainWindow = null;
   }
   await Promise.race([
-    serverHandle.close().catch(() => {}),
+    closeEmbeddedServer(),
     new Promise<void>((resolve) => setTimeout(resolve, 3000)),
   ]);
-  serverHandle = null;
   app.exit(0);
 }
 
@@ -861,7 +860,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (process.platform !== 'darwin' && !isSmokeTest) {
     app.quit();
   }
 });
