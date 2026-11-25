@@ -1,6 +1,6 @@
 {
   "name": "@coodance/mcp",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "module",
   "description": "CooDance MCP Server (dual-transport stdio + Streamable HTTP) for external AI agents",
   "main": "./dist/index.js",
