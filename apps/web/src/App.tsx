@@ -84,13 +84,13 @@ export const App: React.FC = () => {
   });
   const [updateStatus, setUpdateStatus] = useState<DesktopUpdateStatusDto>({
     phase: 'idle',
-    currentVersion: '1.3.0',
+    currentVersion: '1.3.1',
     target: {
       isDesktop: Boolean(window.coodanceDesktop?.isDesktop),
       platform: window.coodanceDesktop?.platform || 'web',
       arch: window.coodanceDesktop?.arch || 'x64',
       installKind: window.coodanceDesktop?.isDesktop ? 'nsis' : 'web',
-      currentVersion: '1.3.0',
+      currentVersion: '1.3.1',
     },
     checkResult: null,
     download: null,

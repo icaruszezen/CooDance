@@ -216,7 +216,7 @@ jobs:
                 const timer = setTimeout(() => {
                   finish(new Error("Packaged MCP stdio smoke timed out after 30s.\nSTDOUT: " + stdout + "\nSTDERR: " + stderr));
                 }, 30000);
-                child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.3.0" } } }) + "\n");
+                child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "ci", version: "1.3.1" } } }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }) + "\n");
                 child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }) + "\n");
               });
@@ -273,7 +273,8 @@ jobs:
           **纯代码化（Code-as-Video）16:9 自动化视频生产工作台与管线**，统一支持 **Web 自托管、Windows 桌面、macOS 桌面** 与 **全套兼容 CLI 脚本**。
 
           ### 核心特性
-          - **Studio 全站视觉重构与 Remotion 成片美学升级（v1.3.0 新特性）**：全面迁移至中性炭灰/浅灰双主题创作工作台与 Base UI + Tailwind v4 组件体系，内置 `react-resizable-panels` 可拖拽平铺分栏、`⌘K` 全局命令面板、CodeMirror 6 源码/脚本/Git Diff/SRT 语法编辑器与高分屏 Retina Canvas 音频波形播放器；同步升级 Remotion 成片分镜视觉体系（炭黑 / 瑞士米白 / 深林翠灰 Bento 网格与无光斑极简排版），并修复多音效并发播放崩溃及 Windows 桌面退出竞态问题。
+          - **官方 10 镜深度功能宣传示例与预置豆包 2.0 真人配音（v1.3.1 新特性）**：全面升级「一键体验完整示例」为 10 镜 2 分 19 秒官方宣传片（真实工作台高清界面、17s 实机演示录屏、极光棱镜 Logo、科技感铺底 BGM 与 12 处 DSP 音效），无豆包密钥或离线时自动填充预置火山豆包 2.0 云舟真人配音而非低质本地模拟音；同步打包进桌面端 `demo-assets` 资源，并修复内置 Lottie 动效在 Remotion 中渲染异常以及字幕在小数点/版本号处误断行的问题。
+          - **Studio 全站视觉重构与 Remotion 成片美学升级（v1.3.0）**：全面迁移至中性炭灰/浅灰双主题创作工作台与 Base UI + Tailwind v4 组件体系，内置 `react-resizable-panels` 可拖拽平铺分栏、`⌘K` 全局命令面板、CodeMirror 6 源码/脚本/Git Diff/SRT 语法编辑器与高分屏 Retina Canvas 音频波形播放器；同步升级 Remotion 成片分镜视觉体系（炭黑 / 瑞士米白 / 深林翠灰 Bento 网格与无光斑极简排版），并修复多音效并发播放崩溃及 Windows 桌面退出竞态问题。
           - **自动检测更新与中国区多节点镜像加速**：内置多节点国内 GitHub 加速镜像池（`gh-proxy.org` / `hk.gh-proxy.org` / `ghfast.top` / `ghproxy.net`）自动探测故障切换并支持自定义镜像前缀，配合 `update-manifest.json`（零 GitHub API 限流）、断点续传、强制 SHA256 校验与跨平台安全更新引导（Windows NSIS 安装版/便携版自动识别、macOS arm64/x64 DMG）。
           - **外部 AI Agent 接入（MCP + Skill 协同引擎）**：内置 `@coodance/mcp`（11 个强校验 `coodance_*` 工具 + 4 个渐进式 Resources，同时支持 **Streamable HTTP `/mcp`** 与 **零依赖离线 `stdio` / `ELECTRON_RUN_AS_NODE=1`**），配套 5 阶段 `coodance-video-producer` Skill 规范包与工作台「Agent 接入中心」一键安全安装器（自动 `.bak` 备份合并 Cursor / Claude Code / Claude Desktop / Antigravity / Cherry Studio）。
           - **四大质量与安全护栏**：`edit_plan.json` 写前强校验门禁（Zod + 时间轴无断层/重叠 + 素材存在性 + `zoomRegion` 检查）、`coodance_import_asset` 统一外部素材入库（本地/URL/Base64/SVG 自动 FFprobe 探测）、写前自动 Git 快照、异步非阻塞渲染 Job + TTS 哈希缓存与付费豆包保护开关。
