@@ -443,7 +443,7 @@ export const App: React.FC = () => {
       });
       await loadAll(res.project.slug);
       setActiveTab('storyboard');
-      notify('✔ 完整 6 镜实机示例工程已就绪，可直接点击播放或渲染！', 'success');
+      notify('✔ 10 镜官方宣传示例工程已就绪（含豆包 2.0 真人配音），可直接点击播放或渲染！', 'success');
     } catch (err) {
       notify(err instanceof Error ? err.message : String(err), 'error');
     } finally {
@@ -697,7 +697,7 @@ export const App: React.FC = () => {
                     >
                       <Play size={13} />
                       <span>
-                        {busyDemo ? '正在初始化 6 镜实机示例...' : t(lang, 'createDemo')}
+                        {busyDemo ? '正在初始化 10 镜宣传示例...' : t(lang, 'createDemo')}
                       </span>
                     </Button>
                   </div>

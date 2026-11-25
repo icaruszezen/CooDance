@@ -80,9 +80,9 @@ export function splitSentenceForSubtitles(
   if (!cleaned) return [];
   if (cleaned.length <= maxCharsPerCue) return [cleaned];
 
-  // Split by strong/weak punctuation first
+  // Split by strong/weak punctuation, without breaking decimals/versions/filenames like "2.0" or "edit_plan.json"
   const rawChunks = cleaned
-    .split(/(?<=[。！？；，、,.!?;])/)
+    .split(/(?<=[。！？；，、,!?;])|(?<=\.)(?![0-9A-Za-z_])/)
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -96,15 +96,34 @@ export function splitSentenceForSubtitles(
     }
   };
 
+  const pushLongChunk = (chunk: string) => {
+    // Allow 1-2 extra chars if it prevents a lone trailing punctuation/char orphan cue
+    if (chunk.length <= maxCharsPerCue + 2) {
+      merged.push(chunk);
+      return;
+    }
+    const parts: string[] = [];
+    for (let offset = 0; offset < chunk.length; offset += maxCharsPerCue) {
+      parts.push(chunk.slice(offset, offset + maxCharsPerCue));
+    }
+    if (parts.length >= 2) {
+      const last = parts[parts.length - 1];
+      if (last.length <= 2 || /^[。！？；，、,.!?;]+$/.test(last)) {
+        parts[parts.length - 2] += last;
+        parts.pop();
+      }
+    }
+    for (const part of parts) {
+      merged.push(part);
+    }
+  };
+
   for (const chunk of rawChunks) {
     if (!buffer) {
       if (chunk.length <= maxCharsPerCue) {
         buffer = chunk;
       } else {
-        // Hard-wrap very long punctuation-free segment
-        for (let offset = 0; offset < chunk.length; offset += maxCharsPerCue) {
-          merged.push(chunk.slice(offset, offset + maxCharsPerCue));
-        }
+        pushLongChunk(chunk);
       }
     } else if (buffer.length + chunk.length <= maxCharsPerCue) {
       buffer += chunk;
@@ -113,9 +132,7 @@ export function splitSentenceForSubtitles(
       if (chunk.length <= maxCharsPerCue) {
         buffer = chunk;
       } else {
-        for (let offset = 0; offset < chunk.length; offset += maxCharsPerCue) {
-          merged.push(chunk.slice(offset, offset + maxCharsPerCue));
-        }
+        pushLongChunk(chunk);
       }
     }
   }

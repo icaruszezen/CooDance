@@ -256,8 +256,8 @@ export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
           <Play size={12} className="text-accent" />
           {busyDemo
             ? isZh
-              ? '正在生成 6 镜实机示例...'
-              : 'Generating demo episode...'
+              ? '正在生成 10 镜宣传示例...'
+              : 'Generating 10-scene promo demo...'
             : t(lang, 'createDemo')}
         </Button>
       </div>

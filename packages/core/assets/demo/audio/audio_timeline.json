@@ -1,0 +1,1365 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-11-25T08:12:21.417Z",
+  "provider": "doubao",
+  "voice": "zh_male_m191_uranus_bigtts",
+  "speed": 1.08,
+  "sampleRate": 24000,
+  "totalDurationSec": 138.982,
+  "voiceoverFile": "build/voiceover.mp3",
+  "subtitlesFile": "build/subtitles.srt",
+  "waveformPeaks": [
+    0.833,
+    0.701,
+    0.588,
+    0.615,
+    0.915,
+    0.676,
+    0.884,
+    0.682,
+    0.819,
+    0.472,
+    0.89,
+    0.907,
+    0.586,
+    0.57,
+    0.734,
+    0.461,
+    0.557,
+    0.003,
+    0.948,
+    0.862,
+    0.695,
+    0.931,
+    0.927,
+    0.898,
+    0.719,
+    0.575,
+    0.659,
+    0.896,
+    0.888,
+    0.774,
+    0.908,
+    0.527,
+    0.41,
+    0.609,
+    0.633,
+    0.323,
+    0.49,
+    0.706,
+    0.39,
+    0.71,
+    0.606,
+    0.662,
+    0.562,
+    0.88,
+    0.594,
+    0.084,
+    0.891,
+    0.737,
+    0.404,
+    0.897,
+    0.503,
+    0.565,
+    0.649,
+    0.583,
+    0.529,
+    0.456,
+    0.68,
+    0.819,
+    0.716,
+    0.501,
+    0.436,
+    0.519,
+    0.904,
+    0.789,
+    0.684,
+    0.53,
+    0.909,
+    0.828,
+    0.9,
+    0.598,
+    0.369,
+    0.486,
+    0.893,
+    0.875,
+    0.027,
+    0.788,
+    0.765,
+    0.874,
+    0.939,
+    0.645,
+    0.742,
+    0.916,
+    0.917,
+    0.873,
+    0.879,
+    0.862,
+    0.904,
+    0.872,
+    0.906,
+    0.902,
+    0.805,
+    0.548,
+    0.554,
+    0.523,
+    0.528,
+    0.268,
+    0.29,
+    0.389,
+    0.322,
+    0.658,
+    0.24,
+    0.431,
+    0.815,
+    0.56,
+    0.776,
+    0.783,
+    0.728,
+    0.882,
+    0.86,
+    0.634,
+    0.806,
+    0.724,
+    0.731,
+    1,
+    0.91,
+    0.51,
+    0.493,
+    0.682,
+    0.627,
+    0.607,
+    0.535,
+    0.85,
+    0.896,
+    0.679,
+    0.734,
+    0.623,
+    0.774,
+    0.445,
+    0.858,
+    0.442,
+    0.315,
+    0.902,
+    0.513,
+    0.299,
+    0.3,
+    0.487,
+    0.552,
+    0.268,
+    0.484,
+    0.616,
+    0.611,
+    0.75,
+    0.445,
+    0.498,
+    0.432,
+    0.898,
+    0.908,
+    0.433,
+    0.9,
+    0.798,
+    0.904,
+    0.913,
+    0.84,
+    0.713,
+    0.859,
+    0.797,
+    0.904,
+    0.685,
+    0.534,
+    0.853,
+    0.898,
+    0.445,
+    0.156,
+    0.956,
+    0.828,
+    0.892,
+    0.901,
+    0.401,
+    0.89,
+    0.897,
+    0.888,
+    0.527,
+    0.905,
+    0.631,
+    0.702,
+    0.869,
+    0.88,
+    0.565,
+    0.808,
+    0.857,
+    0.788,
+    0.658,
+    0.666,
+    0.861,
+    0.592,
+    0.902,
+    0.472,
+    0.487,
+    0.891,
+    0.653,
+    0.868,
+    0.912,
+    0.915,
+    0.583,
+    0.664,
+    0.761,
+    0.399,
+    0.562,
+    0.694,
+    0.833,
+    0.876,
+    0.466,
+    0.811,
+    0.735,
+    0.732,
+    0.624,
+    0.519,
+    0.919,
+    0.257,
+    0.89,
+    0.897,
+    0.91,
+    0.746,
+    0.76,
+    0.466,
+    0.895,
+    0.89,
+    0.887,
+    0.888,
+    0.368,
+    0.574,
+    0.738,
+    0.635,
+    0.963,
+    0.93,
+    0.903,
+    0.901,
+    0.587,
+    0.904,
+    0.907,
+    0.895,
+    0.906,
+    0.907,
+    0.884,
+    0.902,
+    0.9,
+    0.542,
+    0.92,
+    0.898,
+    0.659,
+    0.542,
+    0.903,
+    0.884,
+    0.885,
+    0.57,
+    0.671,
+    0.3,
+    0.894,
+    0.891,
+    0.79,
+    0.659,
+    0.827,
+    0.748,
+    0.872,
+    0.918,
+    0.709,
+    0.928,
+    0.854,
+    0.811,
+    0.239
+  ],
+  "sentences": [
+    {
+      "id": 0,
+      "text": "还在为一条产品演示视频反复拖轨道、对字幕、改文案吗？",
+      "note": "镜头 01 · 开场亮相：纯代码化 16 比 9 视频工作台",
+      "hash": "673d3ef85ec5db6a",
+      "cached": true,
+      "startSec": 0,
+      "endSec": 3.79,
+      "durationSec": 3.79,
+      "rawDurationSec": 4.248,
+      "trimmedMs": 158,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 1,
+          "sentenceId": 0,
+          "text": "还在为一条产品演示视频反复拖轨道、对字幕、",
+          "startSec": 0,
+          "endSec": 3.061
+        },
+        {
+          "id": 2,
+          "sentenceId": 0,
+          "text": "改文案吗？",
+          "startSec": 3.061,
+          "endSec": 3.79
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "text": "欢迎了解 CooDance，一套用纯代码驱动的 16 比 9 自动化视频生产工作台。",
+      "hash": "ea5cbd70d0b61abc",
+      "cached": true,
+      "startSec": 4.01,
+      "endSec": 9.045,
+      "durationSec": 5.036,
+      "rawDurationSec": 5.64,
+      "trimmedMs": 210,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 3,
+          "sentenceId": 1,
+          "text": "欢迎了解 CooDance，",
+          "startSec": 4.01,
+          "endSec": 5.689
+        },
+        {
+          "id": 4,
+          "sentenceId": 1,
+          "text": "一套用纯代码驱动的 16 比 9 自动化视频",
+          "startSec": 5.689,
+          "endSec": 8.327
+        },
+        {
+          "id": 5,
+          "sentenceId": 1,
+          "text": "生产工作台。",
+          "startSec": 8.327,
+          "endSec": 9.045
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "text": "第一阶段口播配音，直连火山豆包 2.0 或免费语音引擎逐句合成，按内容哈希增量缓存。",
+      "note": "镜头 02 · 阶段一 口播与配音：豆包 2.0 与 10ms RMS 气口裁切",
+      "hash": "04fe1c7a7547f00f",
+      "cached": true,
+      "startSec": 9.605,
+      "endSec": 16.69,
+      "durationSec": 7.084,
+      "rawDurationSec": 8.016,
+      "trimmedMs": 366,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 6,
+          "sentenceId": 2,
+          "text": "第一阶段口播配音，",
+          "startSec": 9.605,
+          "endSec": 11.123
+        },
+        {
+          "id": 7,
+          "sentenceId": 2,
+          "text": "直连火山豆包 2.0 或免费语音引擎逐句合成，",
+          "startSec": 11.123,
+          "endSec": 15.002
+        },
+        {
+          "id": 8,
+          "sentenceId": 2,
+          "text": "按内容哈希增量缓存。",
+          "startSec": 15.002,
+          "endSec": 16.69
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "text": "配合 10 毫秒 RMS 气口裁切，自动消除死静音，一键输出毫秒级时间轴与标准字幕。",
+      "hash": "b22e2f34f334134a",
+      "cached": true,
+      "startSec": 16.91,
+      "endSec": 23.991,
+      "durationSec": 7.082,
+      "rawDurationSec": 8.232,
+      "trimmedMs": 582,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 9,
+          "sentenceId": 3,
+          "text": "配合 10 毫秒 RMS 气口裁切，",
+          "startSec": 16.91,
+          "endSec": 19.945
+        },
+        {
+          "id": 10,
+          "sentenceId": 3,
+          "text": "自动消除死静音，",
+          "startSec": 19.945,
+          "endSec": 21.294
+        },
+        {
+          "id": 11,
+          "sentenceId": 3,
+          "text": "一键输出毫秒级时间轴与标准字幕。",
+          "startSec": 21.294,
+          "endSec": 23.991
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "text": "第二阶段素材场记，拖入录屏即可由 FFprobe 自动探测并均匀抽帧，点选关键帧直设裁剪起点。",
+      "note": "镜头 03 · 阶段二 素材与场记：FFprobe 自动抽帧与扩展工坊",
+      "hash": "d3cf63dcf13b8804",
+      "cached": true,
+      "startSec": 24.551,
+      "endSec": 32.827,
+      "durationSec": 8.276,
+      "rawDurationSec": 9.24,
+      "trimmedMs": 300,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 12,
+          "sentenceId": 4,
+          "text": "第二阶段素材场记，",
+          "startSec": 24.551,
+          "endSec": 26.136
+        },
+        {
+          "id": 13,
+          "sentenceId": 4,
+          "text": "拖入录屏即可由 FFprobe 自动探测并均",
+          "startSec": 26.136,
+          "endSec": 30.01
+        },
+        {
+          "id": 14,
+          "sentenceId": 4,
+          "text": "匀抽帧，",
+          "startSec": 30.01,
+          "endSec": 30.714
+        },
+        {
+          "id": 15,
+          "sentenceId": 4,
+          "text": "点选关键帧直设裁剪起点。",
+          "startSec": 30.714,
+          "endSec": 32.827
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "text": "右侧工坊支持一键拉取品牌 Logo、Lottie 矢量动效，并离线生成 10 款无版权交互音效。",
+      "hash": "23dcc770da5406f7",
+      "cached": true,
+      "startSec": 33.047,
+      "endSec": 39.693,
+      "durationSec": 6.646,
+      "rawDurationSec": 7.656,
+      "trimmedMs": 486,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 16,
+          "sentenceId": 5,
+          "text": "右侧工坊支持一键拉取品牌 Logo、",
+          "startSec": 33.047,
+          "endSec": 35.539
+        },
+        {
+          "id": 17,
+          "sentenceId": 5,
+          "text": "Lottie 矢量动效，",
+          "startSec": 35.539,
+          "endSec": 37.201
+        },
+        {
+          "id": 18,
+          "sentenceId": 5,
+          "text": "并离线生成 10 款无版权交互音效。",
+          "startSec": 37.201,
+          "endSec": 39.693
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "text": "进入分镜预览，16 比 9 画布支持 60 帧实时播放，五条同步轨道串联章节、分镜、标注、音效与配音波形。",
+      "note": "镜头 04 · 阶段三 实机演示：五轨同步时间轴与框选局部推镜",
+      "hash": "dd021f105fc80445",
+      "cached": true,
+      "startSec": 40.253,
+      "endSec": 48.647,
+      "durationSec": 8.394,
+      "rawDurationSec": 9.456,
+      "trimmedMs": 396,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 19,
+          "sentenceId": 6,
+          "text": "进入分镜预览，",
+          "startSec": 40.253,
+          "endSec": 41.362
+        },
+        {
+          "id": 20,
+          "sentenceId": 6,
+          "text": "16 比 9 画布支持 60 帧实时播放，",
+          "startSec": 41.362,
+          "endSec": 44.688
+        },
+        {
+          "id": 21,
+          "sentenceId": 6,
+          "text": "五条同步轨道串联章节、分镜、标注、",
+          "startSec": 44.688,
+          "endSec": 47.38
+        },
+        {
+          "id": 22,
+          "sentenceId": 6,
+          "text": "音效与配音波形。",
+          "startSec": 47.38,
+          "endSec": 48.647
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "text": "直接在录屏画布拖拽框选区域，即可自动生成丝滑的局部放大推镜。",
+      "hash": "116a00bcadf629d8",
+      "cached": true,
+      "startSec": 48.867,
+      "endSec": 53.83,
+      "durationSec": 4.963,
+      "rawDurationSec": 5.856,
+      "trimmedMs": 496,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 23,
+          "sentenceId": 7,
+          "text": "直接在录屏画布拖拽框选区域，",
+          "startSec": 48.867,
+          "endSec": 51.183
+        },
+        {
+          "id": 24,
+          "sentenceId": 7,
+          "text": "即可自动生成丝滑的局部放大推镜。",
+          "startSec": 51.183,
+          "endSec": 53.83
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "text": "工作台支持暗影工坊与极简白昼双色切换，可视化属性与分镜源码双向实时热更新。",
+      "note": "镜头 05 · 暗亮双色与双向热更新：6 类分镜与 7 类叠加层",
+      "hash": "b188fea95cfeb0d6",
+      "cached": true,
+      "startSec": 54.39,
+      "endSec": 60.613,
+      "durationSec": 6.223,
+      "rawDurationSec": 7.224,
+      "trimmedMs": 504,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 25,
+          "sentenceId": 8,
+          "text": "工作台支持暗影工坊与极简白昼双色切换，",
+          "startSec": 54.39,
+          "endSec": 57.586
+        },
+        {
+          "id": 26,
+          "sentenceId": 8,
+          "text": "可视化属性与分镜源码双向实时热更新。",
+          "startSec": 57.586,
+          "endSec": 60.613
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "text": "内置标题卡、录屏、运镜图片、分屏对比、数据终端与网页还原 6 类分镜，及 7 类精准叠加标注。",
+      "hash": "012806e1bb63860d",
+      "cached": true,
+      "startSec": 60.833,
+      "endSec": 69.251,
+      "durationSec": 8.419,
+      "rawDurationSec": 9.864,
+      "trimmedMs": 774,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 27,
+          "sentenceId": 9,
+          "text": "内置标题卡、录屏、运镜图片、分屏对比、",
+          "startSec": 60.833,
+          "endSec": 64.236
+        },
+        {
+          "id": 28,
+          "sentenceId": 9,
+          "text": "数据终端与网页还原 6 类分镜，",
+          "startSec": 64.236,
+          "endSec": 67.102
+        },
+        {
+          "id": 29,
+          "sentenceId": 9,
+          "text": "及 7 类精准叠加标注。",
+          "startSec": 67.102,
+          "endSec": 69.251
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "text": "原生开放 HTTP 与离线双模式 MCP 服务，提供 11 个强校验工具、4 项工程资源与 5 阶段编导规范包。",
+      "note": "镜头 06 · 外部 AI Agent 协同：MCP 与 Skill 一键接入",
+      "hash": "f3bc3a709ae26598",
+      "cached": true,
+      "startSec": 69.811,
+      "endSec": 78.73,
+      "durationSec": 8.918,
+      "rawDurationSec": 10.44,
+      "trimmedMs": 810,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 30,
+          "sentenceId": 10,
+          "text": "原生开放 HTTP 与离线双模式 MCP 服务，",
+          "startSec": 69.811,
+          "endSec": 73.633
+        },
+        {
+          "id": 31,
+          "sentenceId": 10,
+          "text": "提供 11 个强校验工具、",
+          "startSec": 73.633,
+          "endSec": 75.703
+        },
+        {
+          "id": 32,
+          "sentenceId": 10,
+          "text": "4 项工程资源与 5 阶段编导规范包。",
+          "startSec": 75.703,
+          "endSec": 78.73
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "text": "一键接入 Cursor、Claude Code 等外部助手，并内置写前校验、自动快照与付费配音防误扣费四大护栏。",
+      "hash": "02c39ca69e344633",
+      "cached": true,
+      "startSec": 78.95,
+      "endSec": 86.527,
+      "durationSec": 7.577,
+      "rawDurationSec": 9.072,
+      "trimmedMs": 892,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 33,
+          "sentenceId": 11,
+          "text": "一键接入 Cursor、",
+          "startSec": 78.95,
+          "endSec": 80.574
+        },
+        {
+          "id": 34,
+          "sentenceId": 11,
+          "text": "Claude Code 等外部助手，",
+          "startSec": 80.574,
+          "endSec": 83.009
+        },
+        {
+          "id": 35,
+          "sentenceId": 11,
+          "text": "并内置写前校验、",
+          "startSec": 83.009,
+          "endSec": 84.091
+        },
+        {
+          "id": 36,
+          "sentenceId": 11,
+          "text": "自动快照与付费配音防误扣费四大护栏。",
+          "startSec": 84.091,
+          "endSec": 86.527
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "text": "一套代码覆盖私有 Web、Docker 容器与 Windows、macOS、Linux 原生桌面端。",
+      "note": "镜头 07 · 跨平台多端架构：Web 自托管与全平台桌面端",
+      "hash": "1f0d61e9300eab7a",
+      "cached": true,
+      "startSec": 87.087,
+      "endSec": 92.625,
+      "durationSec": 5.539,
+      "rawDurationSec": 6.24,
+      "trimmedMs": 260,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 37,
+          "sentenceId": 12,
+          "text": "一套代码覆盖私有 Web、",
+          "startSec": 87.087,
+          "endSec": 88.527
+        },
+        {
+          "id": 38,
+          "sentenceId": 12,
+          "text": "Docker 容器与 Windows、",
+          "startSec": 88.527,
+          "endSec": 90.632
+        },
+        {
+          "id": 39,
+          "sentenceId": 12,
+          "text": "macOS、Linux 原生桌面端。",
+          "startSec": 90.632,
+          "endSec": 92.625
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "text": "内置固定本地端口与国内多镜像加速自动更新，全程校验完整性，开箱即用。",
+      "hash": "28ddadf2c70c9d88",
+      "cached": true,
+      "startSec": 92.845,
+      "endSec": 99.847,
+      "durationSec": 7.002,
+      "rawDurationSec": 7.848,
+      "trimmedMs": 288,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 40,
+          "sentenceId": 13,
+          "text": "内置固定本地端口与国内多镜像加速自动更新，",
+          "startSec": 92.845,
+          "endSec": 97.169
+        },
+        {
+          "id": 41,
+          "sentenceId": 13,
+          "text": "全程校验完整性，开箱即用。",
+          "startSec": 97.169,
+          "endSec": 99.847
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "text": "对比传统剪辑软件，修改单句文案再也不用重拖所有轨道和字幕。",
+      "note": "镜头 08 · 范式对比：告别传统剪辑重复返工",
+      "hash": "b21729e1fe95c1b5",
+      "cached": true,
+      "startSec": 100.407,
+      "endSec": 105.103,
+      "durationSec": 4.696,
+      "rawDurationSec": 5.448,
+      "trimmedMs": 378,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 42,
+          "sentenceId": 14,
+          "text": "对比传统剪辑软件，",
+          "startSec": 100.407,
+          "endSec": 101.864
+        },
+        {
+          "id": 43,
+          "sentenceId": 14,
+          "text": "修改单句文案再也不用重拖所有轨道和字幕。",
+          "startSec": 101.864,
+          "endSec": 105.103
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "text": "声明式分镜让每一帧画面都可审查、可复现，增量重跑数秒即可完成迭代。",
+      "hash": "cced80109cedff09",
+      "cached": true,
+      "startSec": 105.323,
+      "endSec": 111.111,
+      "durationSec": 5.788,
+      "rawDurationSec": 6.672,
+      "trimmedMs": 422,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 44,
+          "sentenceId": 15,
+          "text": "声明式分镜让每一帧画面都可审查、可复现，",
+          "startSec": 105.323,
+          "endSec": 108.831
+        },
+        {
+          "id": 45,
+          "sentenceId": 15,
+          "text": "增量重跑数秒即可完成迭代。",
+          "startSec": 108.831,
+          "endSec": 111.111
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "text": "第四阶段支持 1080p 60 帧成品与 720p 草稿双预设导出，实时推送逐帧进度。",
+      "note": "镜头 09 · 阶段四 渲染与快照：Git 时间戳与单文件精准回退",
+      "hash": "5502bb2a4994cc3f",
+      "cached": true,
+      "startSec": 111.671,
+      "endSec": 119.384,
+      "durationSec": 7.713,
+      "rawDurationSec": 8.664,
+      "trimmedMs": 334,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 46,
+          "sentenceId": 16,
+          "text": "第四阶段支持 1080p 60 帧成品与 7",
+          "startSec": 111.671,
+          "endSec": 115.617
+        },
+        {
+          "id": 47,
+          "sentenceId": 16,
+          "text": "20p 草稿双预设导出，",
+          "startSec": 115.617,
+          "endSec": 117.77
+        },
+        {
+          "id": 48,
+          "sentenceId": 16,
+          "text": "实时推送逐帧进度。",
+          "startSec": 117.77,
+          "endSec": 119.384
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "text": "每工程独立维护 Git 仓库与可视化 Diff，支持整库或单文件精准回退，绝不丢稿。",
+      "hash": "3fa655f7f194a5af",
+      "cached": true,
+      "startSec": 119.604,
+      "endSec": 125.946,
+      "durationSec": 6.342,
+      "rawDurationSec": 7.44,
+      "trimmedMs": 590,
+      "pauseAfterMs": 560,
+      "subtitles": [
+        {
+          "id": 49,
+          "sentenceId": 17,
+          "text": "每工程独立维护 Git 仓库与可视化 Diff，",
+          "startSec": 119.604,
+          "endSec": 123.228
+        },
+        {
+          "id": 50,
+          "sentenceId": 17,
+          "text": "支持整库或单文件精准回退，绝不丢稿。",
+          "startSec": 123.228,
+          "endSec": 125.946
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "text": "图形工作台、MCP 服务与 10 个命令行脚本共享同一核心引擎，磁盘双向热监听。",
+      "note": "镜头 10 · 命令行与全链路交付：立即启动自动化视频管线",
+      "hash": "9f36f7c9ee21775c",
+      "cached": true,
+      "startSec": 126.506,
+      "endSec": 133.628,
+      "durationSec": 7.122,
+      "rawDurationSec": 7.872,
+      "trimmedMs": 182,
+      "pauseAfterMs": 220,
+      "subtitles": [
+        {
+          "id": 51,
+          "sentenceId": 18,
+          "text": "图形工作台、",
+          "startSec": 126.506,
+          "endSec": 127.574
+        },
+        {
+          "id": 52,
+          "sentenceId": 18,
+          "text": "MCP 服务与 10 个命令行脚本共享同一核",
+          "startSec": 127.574,
+          "endSec": 131.491
+        },
+        {
+          "id": 53,
+          "sentenceId": 18,
+          "text": "心引擎，",
+          "startSec": 131.491,
+          "endSec": 132.203
+        },
+        {
+          "id": 54,
+          "sentenceId": 18,
+          "text": "磁盘双向热监听。",
+          "startSec": 132.203,
+          "endSec": 133.628
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "text": "现在点击播放或导出，让 CooDance 接管你的下一条高质量自动化视频。",
+      "hash": "dcb8455649f6c04a",
+      "cached": true,
+      "startSec": 133.848,
+      "endSec": 138.682,
+      "durationSec": 4.835,
+      "rawDurationSec": 5.64,
+      "trimmedMs": 420,
+      "pauseAfterMs": 300,
+      "subtitles": [
+        {
+          "id": 55,
+          "sentenceId": 19,
+          "text": "现在点击播放或导出，",
+          "startSec": 133.848,
+          "endSec": 135.155
+        },
+        {
+          "id": 56,
+          "sentenceId": 19,
+          "text": "让 CooDance 接管你的下一条高质量自",
+          "startSec": 135.155,
+          "endSec": 138.03
+        },
+        {
+          "id": 57,
+          "sentenceId": 19,
+          "text": "动化视频。",
+          "startSec": 138.03,
+          "endSec": 138.682
+        }
+      ]
+    }
+  ],
+  "subtitles": [
+    {
+      "id": 1,
+      "sentenceId": 0,
+      "text": "还在为一条产品演示视频反复拖轨道、对字幕、",
+      "startSec": 0,
+      "endSec": 3.061
+    },
+    {
+      "id": 2,
+      "sentenceId": 0,
+      "text": "改文案吗？",
+      "startSec": 3.061,
+      "endSec": 3.79
+    },
+    {
+      "id": 3,
+      "sentenceId": 1,
+      "text": "欢迎了解 CooDance，",
+      "startSec": 4.01,
+      "endSec": 5.689
+    },
+    {
+      "id": 4,
+      "sentenceId": 1,
+      "text": "一套用纯代码驱动的 16 比 9 自动化视频",
+      "startSec": 5.689,
+      "endSec": 8.327
+    },
+    {
+      "id": 5,
+      "sentenceId": 1,
+      "text": "生产工作台。",
+      "startSec": 8.327,
+      "endSec": 9.045
+    },
+    {
+      "id": 6,
+      "sentenceId": 2,
+      "text": "第一阶段口播配音，",
+      "startSec": 9.605,
+      "endSec": 11.123
+    },
+    {
+      "id": 7,
+      "sentenceId": 2,
+      "text": "直连火山豆包 2.0 或免费语音引擎逐句合成，",
+      "startSec": 11.123,
+      "endSec": 15.002
+    },
+    {
+      "id": 8,
+      "sentenceId": 2,
+      "text": "按内容哈希增量缓存。",
+      "startSec": 15.002,
+      "endSec": 16.69
+    },
+    {
+      "id": 9,
+      "sentenceId": 3,
+      "text": "配合 10 毫秒 RMS 气口裁切，",
+      "startSec": 16.91,
+      "endSec": 19.945
+    },
+    {
+      "id": 10,
+      "sentenceId": 3,
+      "text": "自动消除死静音，",
+      "startSec": 19.945,
+      "endSec": 21.294
+    },
+    {
+      "id": 11,
+      "sentenceId": 3,
+      "text": "一键输出毫秒级时间轴与标准字幕。",
+      "startSec": 21.294,
+      "endSec": 23.991
+    },
+    {
+      "id": 12,
+      "sentenceId": 4,
+      "text": "第二阶段素材场记，",
+      "startSec": 24.551,
+      "endSec": 26.136
+    },
+    {
+      "id": 13,
+      "sentenceId": 4,
+      "text": "拖入录屏即可由 FFprobe 自动探测并均",
+      "startSec": 26.136,
+      "endSec": 30.01
+    },
+    {
+      "id": 14,
+      "sentenceId": 4,
+      "text": "匀抽帧，",
+      "startSec": 30.01,
+      "endSec": 30.714
+    },
+    {
+      "id": 15,
+      "sentenceId": 4,
+      "text": "点选关键帧直设裁剪起点。",
+      "startSec": 30.714,
+      "endSec": 32.827
+    },
+    {
+      "id": 16,
+      "sentenceId": 5,
+      "text": "右侧工坊支持一键拉取品牌 Logo、",
+      "startSec": 33.047,
+      "endSec": 35.539
+    },
+    {
+      "id": 17,
+      "sentenceId": 5,
+      "text": "Lottie 矢量动效，",
+      "startSec": 35.539,
+      "endSec": 37.201
+    },
+    {
+      "id": 18,
+      "sentenceId": 5,
+      "text": "并离线生成 10 款无版权交互音效。",
+      "startSec": 37.201,
+      "endSec": 39.693
+    },
+    {
+      "id": 19,
+      "sentenceId": 6,
+      "text": "进入分镜预览，",
+      "startSec": 40.253,
+      "endSec": 41.362
+    },
+    {
+      "id": 20,
+      "sentenceId": 6,
+      "text": "16 比 9 画布支持 60 帧实时播放，",
+      "startSec": 41.362,
+      "endSec": 44.688
+    },
+    {
+      "id": 21,
+      "sentenceId": 6,
+      "text": "五条同步轨道串联章节、分镜、标注、",
+      "startSec": 44.688,
+      "endSec": 47.38
+    },
+    {
+      "id": 22,
+      "sentenceId": 6,
+      "text": "音效与配音波形。",
+      "startSec": 47.38,
+      "endSec": 48.647
+    },
+    {
+      "id": 23,
+      "sentenceId": 7,
+      "text": "直接在录屏画布拖拽框选区域，",
+      "startSec": 48.867,
+      "endSec": 51.183
+    },
+    {
+      "id": 24,
+      "sentenceId": 7,
+      "text": "即可自动生成丝滑的局部放大推镜。",
+      "startSec": 51.183,
+      "endSec": 53.83
+    },
+    {
+      "id": 25,
+      "sentenceId": 8,
+      "text": "工作台支持暗影工坊与极简白昼双色切换，",
+      "startSec": 54.39,
+      "endSec": 57.586
+    },
+    {
+      "id": 26,
+      "sentenceId": 8,
+      "text": "可视化属性与分镜源码双向实时热更新。",
+      "startSec": 57.586,
+      "endSec": 60.613
+    },
+    {
+      "id": 27,
+      "sentenceId": 9,
+      "text": "内置标题卡、录屏、运镜图片、分屏对比、",
+      "startSec": 60.833,
+      "endSec": 64.236
+    },
+    {
+      "id": 28,
+      "sentenceId": 9,
+      "text": "数据终端与网页还原 6 类分镜，",
+      "startSec": 64.236,
+      "endSec": 67.102
+    },
+    {
+      "id": 29,
+      "sentenceId": 9,
+      "text": "及 7 类精准叠加标注。",
+      "startSec": 67.102,
+      "endSec": 69.251
+    },
+    {
+      "id": 30,
+      "sentenceId": 10,
+      "text": "原生开放 HTTP 与离线双模式 MCP 服务，",
+      "startSec": 69.811,
+      "endSec": 73.633
+    },
+    {
+      "id": 31,
+      "sentenceId": 10,
+      "text": "提供 11 个强校验工具、",
+      "startSec": 73.633,
+      "endSec": 75.703
+    },
+    {
+      "id": 32,
+      "sentenceId": 10,
+      "text": "4 项工程资源与 5 阶段编导规范包。",
+      "startSec": 75.703,
+      "endSec": 78.73
+    },
+    {
+      "id": 33,
+      "sentenceId": 11,
+      "text": "一键接入 Cursor、",
+      "startSec": 78.95,
+      "endSec": 80.574
+    },
+    {
+      "id": 34,
+      "sentenceId": 11,
+      "text": "Claude Code 等外部助手，",
+      "startSec": 80.574,
+      "endSec": 83.009
+    },
+    {
+      "id": 35,
+      "sentenceId": 11,
+      "text": "并内置写前校验、",
+      "startSec": 83.009,
+      "endSec": 84.091
+    },
+    {
+      "id": 36,
+      "sentenceId": 11,
+      "text": "自动快照与付费配音防误扣费四大护栏。",
+      "startSec": 84.091,
+      "endSec": 86.527
+    },
+    {
+      "id": 37,
+      "sentenceId": 12,
+      "text": "一套代码覆盖私有 Web、",
+      "startSec": 87.087,
+      "endSec": 88.527
+    },
+    {
+      "id": 38,
+      "sentenceId": 12,
+      "text": "Docker 容器与 Windows、",
+      "startSec": 88.527,
+      "endSec": 90.632
+    },
+    {
+      "id": 39,
+      "sentenceId": 12,
+      "text": "macOS、Linux 原生桌面端。",
+      "startSec": 90.632,
+      "endSec": 92.625
+    },
+    {
+      "id": 40,
+      "sentenceId": 13,
+      "text": "内置固定本地端口与国内多镜像加速自动更新，",
+      "startSec": 92.845,
+      "endSec": 97.169
+    },
+    {
+      "id": 41,
+      "sentenceId": 13,
+      "text": "全程校验完整性，开箱即用。",
+      "startSec": 97.169,
+      "endSec": 99.847
+    },
+    {
+      "id": 42,
+      "sentenceId": 14,
+      "text": "对比传统剪辑软件，",
+      "startSec": 100.407,
+      "endSec": 101.864
+    },
+    {
+      "id": 43,
+      "sentenceId": 14,
+      "text": "修改单句文案再也不用重拖所有轨道和字幕。",
+      "startSec": 101.864,
+      "endSec": 105.103
+    },
+    {
+      "id": 44,
+      "sentenceId": 15,
+      "text": "声明式分镜让每一帧画面都可审查、可复现，",
+      "startSec": 105.323,
+      "endSec": 108.831
+    },
+    {
+      "id": 45,
+      "sentenceId": 15,
+      "text": "增量重跑数秒即可完成迭代。",
+      "startSec": 108.831,
+      "endSec": 111.111
+    },
+    {
+      "id": 46,
+      "sentenceId": 16,
+      "text": "第四阶段支持 1080p 60 帧成品与 7",
+      "startSec": 111.671,
+      "endSec": 115.617
+    },
+    {
+      "id": 47,
+      "sentenceId": 16,
+      "text": "20p 草稿双预设导出，",
+      "startSec": 115.617,
+      "endSec": 117.77
+    },
+    {
+      "id": 48,
+      "sentenceId": 16,
+      "text": "实时推送逐帧进度。",
+      "startSec": 117.77,
+      "endSec": 119.384
+    },
+    {
+      "id": 49,
+      "sentenceId": 17,
+      "text": "每工程独立维护 Git 仓库与可视化 Diff，",
+      "startSec": 119.604,
+      "endSec": 123.228
+    },
+    {
+      "id": 50,
+      "sentenceId": 17,
+      "text": "支持整库或单文件精准回退，绝不丢稿。",
+      "startSec": 123.228,
+      "endSec": 125.946
+    },
+    {
+      "id": 51,
+      "sentenceId": 18,
+      "text": "图形工作台、",
+      "startSec": 126.506,
+      "endSec": 127.574
+    },
+    {
+      "id": 52,
+      "sentenceId": 18,
+      "text": "MCP 服务与 10 个命令行脚本共享同一核",
+      "startSec": 127.574,
+      "endSec": 131.491
+    },
+    {
+      "id": 53,
+      "sentenceId": 18,
+      "text": "心引擎，",
+      "startSec": 131.491,
+      "endSec": 132.203
+    },
+    {
+      "id": 54,
+      "sentenceId": 18,
+      "text": "磁盘双向热监听。",
+      "startSec": 132.203,
+      "endSec": 133.628
+    },
+    {
+      "id": 55,
+      "sentenceId": 19,
+      "text": "现在点击播放或导出，",
+      "startSec": 133.848,
+      "endSec": 135.155
+    },
+    {
+      "id": 56,
+      "sentenceId": 19,
+      "text": "让 CooDance 接管你的下一条高质量自",
+      "startSec": 135.155,
+      "endSec": 138.03
+    },
+    {
+      "id": 57,
+      "sentenceId": 19,
+      "text": "动化视频。",
+      "startSec": 138.03,
+      "endSec": 138.682
+    }
+  ]
+}

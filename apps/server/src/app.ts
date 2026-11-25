@@ -382,8 +382,27 @@ export async function startStudioServer(
         demo?: boolean;
       };
       const targetSlug = slug?.trim() || (demo ? 'demo-coodance-launch' : `video-${Date.now()}`);
+      const hasDoubaoCreds = Boolean(settings.tts.doubao.appId && settings.tts.doubao.accessToken);
+      const demoTts =
+        demo && settings.tts.defaultProvider === 'doubao' && hasDoubaoCreds
+          ? {
+              provider: 'doubao' as const,
+              voice: settings.tts.doubao.voiceType || 'zh_male_m191_uranus_bigtts',
+              speed: settings.tts.defaultSpeed || 1.08,
+              silenceThresholdDb: settings.tts.silenceThresholdDb,
+              maxInternalPauseMs: settings.tts.maxInternalPauseMs,
+              paragraphPauseMs: settings.tts.paragraphPauseMs,
+              sentencePauseMs: settings.tts.sentencePauseMs,
+              doubaoAppId: settings.tts.doubao.appId,
+              doubaoAccessToken: settings.tts.doubao.accessToken,
+              doubaoResourceId: settings.tts.doubao.resourceId,
+              doubaoEndpoint: settings.tts.doubao.endpoint,
+            }
+          : undefined;
       const paths = demo
-        ? await seedDemoProject(settings.workspaceDir, targetSlug, settings.ffmpeg)
+        ? await seedDemoProject(settings.workspaceDir, targetSlug, settings.ffmpeg, {
+            tts: demoTts,
+          })
         : await initProject(settings.workspaceDir, targetSlug, { title, theme });
       const summary = await getProjectSummary(settings.workspaceDir, paths.slug);
       res.status(201).json({ project: summary });

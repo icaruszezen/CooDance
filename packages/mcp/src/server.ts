@@ -56,7 +56,7 @@ export const COODANCE_MCP_TOOLS_CATALOG: McpCatalogItem[] = [
     name: 'coodance_manage_project',
     stage: 'project',
     title: '项目管理 (List / Get / Init / Demo / Delete)',
-    description: '列出工作区视频工程、查看工程完整摘要、初始化新工程或一键生成 6 镜实机示例。',
+    description: '列出工作区视频工程、查看工程完整摘要、初始化新工程或一键生成 10 镜官方宣传示例。',
   },
   {
     name: 'coodance_update_script',
@@ -178,7 +178,7 @@ export function createCoodanceMcpServer(deps: CoodanceMcpServerDeps = {}): McpSe
     {
       title: 'Manage CooDance Projects',
       description:
-        'List all projects, inspect a project workspace summary (script, timeline, assets, editPlan), initialize a new project, seed the 6-scene demo project, or delete a project.',
+        'List all projects, inspect a project workspace summary (script, timeline, assets, editPlan), initialize a new project, seed the 10-scene v1.3.0 promo demo project, or delete a project.',
       inputSchema: {
         action: z.enum(['list', 'get', 'init', 'seed_demo', 'delete']),
         slug: z.string().optional().describe('Project slug (required for get, init, delete; optional for seed_demo)'),
@@ -206,7 +206,28 @@ export function createCoodanceMcpServer(deps: CoodanceMcpServerDeps = {}): McpSe
 
         if (args.action === 'seed_demo') {
           const targetSlug = args.slug?.trim() || 'demo-coodance-launch';
-          const paths = await seedDemoProject(settings.workspaceDir, targetSlug, settings.ffmpeg);
+          const hasDoubaoCreds = Boolean(settings.tts.doubao.appId && settings.tts.doubao.accessToken);
+          const allowLiveDoubao =
+            settings.tts.defaultProvider === 'doubao' &&
+            hasDoubaoCreds &&
+            Boolean(settings.mcp.allowPaidTtsFromAgent);
+          const paths = await seedDemoProject(settings.workspaceDir, targetSlug, settings.ffmpeg, {
+            tts: allowLiveDoubao
+              ? {
+                  provider: 'doubao',
+                  voice: settings.tts.doubao.voiceType || 'zh_male_m191_uranus_bigtts',
+                  speed: settings.tts.defaultSpeed || 1.08,
+                  silenceThresholdDb: settings.tts.silenceThresholdDb,
+                  maxInternalPauseMs: settings.tts.maxInternalPauseMs,
+                  paragraphPauseMs: settings.tts.paragraphPauseMs,
+                  sentencePauseMs: settings.tts.sentencePauseMs,
+                  doubaoAppId: settings.tts.doubao.appId,
+                  doubaoAccessToken: settings.tts.doubao.accessToken,
+                  doubaoResourceId: settings.tts.doubao.resourceId,
+                  doubaoEndpoint: settings.tts.doubao.endpoint,
+                }
+              : undefined,
+          });
           const summary = await getProjectSummary(settings.workspaceDir, paths.slug);
           return jsonResult({ ok: true, project: summary });
         }

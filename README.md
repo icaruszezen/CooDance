@@ -11,6 +11,12 @@
 
 ![CooDance 工作台总览：16:9 实时预览、5 轨同步时间轴与属性编排](docs/screenshots/01-storyboard-studio.png)
 
+### 官方 10 镜深度功能宣传片（由 CooDance 自身编译导出 · 豆包 2.0 云舟配音）
+
+[![点击观看 CooDance v1.3.0 10 镜官方深度功能宣传片](docs/demo/coodance-promo-poster.png)](docs/demo/coodance-promo-preview.mp4)
+
+> **🎬 [在线观看 / 下载轻量化 720p 预览版 MP4 (`docs/demo/coodance-promo-preview.mp4`)](docs/demo/coodance-promo-preview.mp4)** · 全片 2 分 19 秒 · 10 镜覆盖四步工作台、豆包 2.0 + 10ms RMS 气口裁切、真实界面与局部推镜、暗/亮双色源码热更新、MCP + Skill AI 协同与 Git 单文件 Diff 回退。在工作台点击 **「一键体验完整示例」** 即可完整打开并导出 1080p60 原画成片。
+
 > **快速导航**：[核心亮点](#核心特性亮点) · [快速开始](#快速开始) · [应用使用说明](#应用使用说明) · [外部 AI Agent 接入](#外部-ai-agent-接入mcp--skill-协同架构) · [标准工程目录](#标准工程磁盘目录结构) · [环境变量与配置](#环境变量与配置说明) · [CLI 命令清单](#命令行cli管线命令清单) · [核心架构](#核心架构monorepo)
 
 ---
@@ -82,7 +88,7 @@ npm run desktop:build:linux
 
 ### 零门槛上手：一键体验示例与基础设置
 
-1. **一键体验完整示例**：首次打开 CooDance，点击左侧边栏底部的 **「一键体验完整示例」** 按钮，系统会在工作区自动创建 `demo-coodance-launch` 工程，生成包含 6 个场景、合成配音、模拟录屏、Logo、Lottie 动效、DSP 音效与完整分镜的实机案例，直接可播放预览与渲染导出。
+1. **一键体验完整示例**：首次打开 CooDance，点击左侧边栏底部的 **「一键体验完整示例」** 按钮，系统会在工作区自动创建 `demo-coodance-launch` 工程，加载 **10 镜官方深度宣传片**（含真实 v1.3.0 工作台界面与录屏、Logo、Lottie 动效、DSP 音效与科技感铺底 BGM）。若已在设置中配置豆包 2.0 密钥则自动实时合成；未配置或离线时自动填充预置的 **火山豆包 2.0 云舟真人配音** 与毫秒级时间轴，零成本开箱即可播放预览与导出 1080p60 成片。
 2. **新建自己的视频工程**：点击左侧边栏 **「+ 新建工程」**，填写视频标题、目录标识（Slug，用于磁盘文件夹命名）以及初始 16:9 视觉主题：
    - `obsidian-studio`（暗影工坊，深色科技发布风）
    - `ivory-editorial`（极简白昼，浅色杂志解说风）
@@ -226,7 +232,7 @@ CooDance 采用 **「精简聚合 MCP（确定性执行与强校验门禁）+ �
 
 | 阶段 | MCP 工具名 | 功能说明 |
 | :--- | :--- | :--- |
-| 项目管理 | `coodance_manage_project` | 列出工程、查看完整摘要、初始化新工程、生成 6 镜实机示例或删除工程 |
+| 项目管理 | `coodance_manage_project` | 列出工程、查看完整摘要、初始化新工程、生成 10 镜官方宣传示例或删除工程 |
 | 口播与配音 | `coodance_update_script` | 写入或更新 `script.txt`（覆写前自动快照） |
 | 口播与配音 | `coodance_run_tts` | 逐句合成配音 + 10ms RMS 气口裁切，生成时间轴与 SRT（复用 SHA-256 缓存） |
 | 素材工坊 | `coodance_import_asset` | 接收外部 Agent 生成的图片/录屏/SVG/Lottie/URL/Base64 安全入库并探测 |
@@ -307,9 +313,10 @@ CooDance 采用 **「精简聚合 MCP（确定性执行与强校验门禁）+ �
 所有命令均可与图形工作台和 MCP 混用，磁盘改动会实时热重载到界面中：
 
 ```bash
-# 1. 初始化工程（支持 --demo 一键生成完整 6 镜实机示例）
+# 1. 初始化工程（支持 --demo 一键生成 10 镜官方宣传示例；无豆包密钥时自动填充预置豆包 2.0 配音）
 npm run init-project -- my-video --title "我的自动化视频"
 npm run init-project -- demo-coodance-launch --demo
+npm run init-project -- demo-coodance-launch --demo --provider doubao --voice zh_male_m191_uranus_bigtts
 
 # 2. 逐句 TTS 合成（火山豆包 2.0 / Edge-TTS / 本地离线）、SHA-256 缓存与 10ms RMS 气口裁切
 npm run tts -- my-video --provider doubao --speed 1.05

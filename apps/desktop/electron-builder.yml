@@ -26,6 +26,8 @@ extraResources:
     to: mcp/stdio.mjs
   - from: ../../skills/coodance-video-producer
     to: skills/coodance-video-producer
+  - from: ../../packages/core/assets/demo
+    to: demo-assets
 asar: true
 asarUnpack:
   - "**/ffmpeg-static/**"
