@@ -20,7 +20,7 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
   const heading = String(props.heading || '数据与自动化指标');
   const subheading = props.subheading ? String(props.subheading) : '';
 
-  const headerIn = spring({ frame, fps, config: { damping: 17, stiffness: 120 } });
+  const headerIn = spring({ frame, fps, config: { damping: 18, stiffness: 120 } });
 
   const metrics = Array.isArray(props.metrics)
     ? (props.metrics as Array<{ label: string; value: string; delta?: string; accent?: string }>)
@@ -40,28 +40,31 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
       style={{
         width: '100%',
         height: '100%',
-        padding: '74px 120px 176px',
+        padding: '68px 116px 168px',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        gap: 36,
+        gap: 32,
         fontFamily: theme.fontSans,
       }}
     >
-      {/* Header */}
+      {/* Editorial Header */}
       <div
         style={{
           opacity: headerIn,
-          transform: `translateY(${interpolate(headerIn, [0, 1], [20, 0])}px)`,
+          transform: `translateY(${interpolate(headerIn, [0, 1], [16, 0])}px)`,
+          paddingBottom: 20,
+          borderBottom: `1px solid ${theme.border}`,
         }}
       >
         <h2
           style={{
             margin: 0,
-            fontSize: 54,
+            fontSize: 52,
             fontWeight: 800,
             color: theme.textPrimary,
-            letterSpacing: '-0.02em',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.15,
           }}
         >
           {heading}
@@ -69,10 +72,10 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
         {subheading ? (
           <p
             style={{
-              margin: '14px 0 0',
-              fontSize: 27,
+              margin: '12px 0 0',
+              fontSize: 25,
               color: theme.textSecondary,
-              fontWeight: 500,
+              fontWeight: 400,
             }}
           >
             {subheading}
@@ -80,74 +83,108 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
         ) : null}
       </div>
 
-      {/* Metrics Grid */}
+      {/* Metrics: 1px Hairline Bento Grid (01..04 + subtle dot annotations) */}
       {variant === 'metrics' ? (
         <div
           style={{
             flex: 1,
             display: 'grid',
             gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 28,
-            alignContent: 'center',
+            gap: 1,
+            background: theme.border,
+            border: `1px solid ${theme.border}`,
+            borderRadius: 14,
+            overflow: 'hidden',
           }}
         >
           {metrics.map((m, idx) => {
             const cardAnim = spring({
-              frame: Math.max(0, frame - 8 - idx * 6),
+              frame: Math.max(0, frame - 6 - idx * 5),
               fps,
-              config: { damping: 16, stiffness: 120 },
+              config: { damping: 18, stiffness: 120 },
             });
-            const accentColor =
+            const dotColor =
               m.accent === 'success'
                 ? theme.success
                 : m.accent === 'warning'
                   ? theme.accent
                   : m.accent === 'primary'
                     ? theme.secondary
-                    : theme.textSecondary;
+                    : theme.textMuted;
 
             return (
               <div
                 key={idx}
                 style={{
                   background: theme.surface,
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: 22,
-                  padding: '38px 42px',
+                  padding: '38px 44px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  gap: 16,
+                  gap: 18,
                   opacity: cardAnim,
-                  transform: `translateY(${interpolate(cardAnim, [0, 1], [26, 0])}px)`,
+                  transform: `translateY(${interpolate(cardAnim, [0, 1], [14, 0])}px)`,
                 }}
               >
-                <div style={{ fontSize: 24, fontWeight: 600, color: theme.textMuted }}>{m.label}</div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                  }}
+                >
+                  <span style={{ fontSize: 23, fontWeight: 500, color: theme.textSecondary }}>
+                    {m.label}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: theme.fontMono,
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: theme.textMuted,
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                </div>
+
                 <div
                   style={{
                     fontFamily: theme.fontMono,
-                    fontSize: 66,
-                    fontWeight: 800,
+                    fontSize: 68,
+                    fontWeight: 700,
                     color: theme.textPrimary,
-                    letterSpacing: '-0.03em',
+                    letterSpacing: '-0.035em',
+                    fontVariantNumeric: 'tabular-nums',
+                    lineHeight: 1.05,
                   }}
                 >
                   {m.value}
                 </div>
+
                 {m.delta ? (
                   <div
                     style={{
                       display: 'inline-flex',
-                      alignSelf: 'flex-start',
-                      padding: '6px 16px',
-                      borderRadius: 999,
-                      background: theme.surfaceElevated,
-                      color: accentColor,
+                      alignItems: 'center',
+                      gap: 10,
+                      color: theme.textSecondary,
                       fontSize: 20,
-                      fontWeight: 600,
+                      fontWeight: 500,
                     }}
                   >
-                    {m.delta}
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: dotColor,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span>{m.delta}</span>
                   </div>
                 ) : null}
               </div>
@@ -156,72 +193,91 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
         </div>
       ) : null}
 
-      {/* Pipeline Steps */}
+      {/* Pipeline Steps: Left 4px Warm Gold Rail Track */}
       {variant === 'pipeline' ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 22, justifyContent: 'center' }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            borderRadius: 14,
+            border: `1px solid ${theme.border}`,
+            background: theme.surface,
+            overflow: 'hidden',
+          }}
+        >
           {pipelineSteps.map((step, idx) => {
             const stepAnim = spring({
-              frame: Math.max(0, frame - 10 - idx * 9),
+              frame: Math.max(0, frame - 8 - idx * 8),
               fps,
-              config: { damping: 16, stiffness: 120 },
+              config: { damping: 18, stiffness: 120 },
             });
-            const statusColor =
-              step.status === 'done'
+            const isActive = step.status === 'active';
+            const isDone = step.status === 'done';
+            const railColor = isActive
+              ? theme.accent
+              : isDone
                 ? theme.success
-                : step.status === 'active'
-                  ? theme.accent
-                  : theme.textMuted;
+                : theme.borderStrong;
 
             return (
               <div
                 key={idx}
                 style={{
+                  flex: 1,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 28,
-                  padding: '32px 38px',
-                  borderRadius: 20,
-                  background: step.status === 'active' ? theme.surfaceElevated : theme.surface,
-                  border: `1px solid ${theme.border}`,
+                  gap: 32,
+                  padding: '28px 42px',
+                  background: isActive ? theme.surfaceElevated : theme.surface,
+                  borderLeft: `4px solid ${railColor}`,
+                  borderBottom: idx < pipelineSteps.length - 1 ? `1px solid ${theme.border}` : 'none',
                   opacity: stepAnim,
-                  transform: `translateX(${interpolate(stepAnim, [0, 1], [-30, 0])}px)`,
+                  transform: `translateX(${interpolate(stepAnim, [0, 1], [-20, 0])}px)`,
                 }}
               >
                 <div
                   style={{
-                    width: 54,
-                    height: 54,
-                    borderRadius: 16,
-                    background: theme.bg,
-                    border: `2px solid ${statusColor}`,
-                    color: statusColor,
                     fontFamily: theme.fontMono,
                     fontSize: 24,
-                    fontWeight: 800,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    fontWeight: 700,
+                    color: isActive ? theme.accent : isDone ? theme.success : theme.textMuted,
+                    width: 44,
                     flexShrink: 0,
                   }}
                 >
-                  {step.status === 'done' ? '✓' : `0${idx + 1}`}
+                  {String(idx + 1).padStart(2, '0')}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: theme.textPrimary }}>{step.title}</div>
-                  <div style={{ marginTop: 8, fontSize: 23, color: theme.textSecondary }}>{step.subtitle}</div>
+                  <div style={{ fontSize: 30, fontWeight: 700, color: theme.textPrimary, letterSpacing: '-0.02em' }}>
+                    {step.title}
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 22, color: theme.textSecondary }}>
+                    {step.subtitle}
+                  </div>
                 </div>
                 <div
                   style={{
-                    padding: '8px 18px',
-                    borderRadius: 999,
-                    background: theme.bg,
-                    color: statusColor,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 10,
                     fontFamily: theme.fontMono,
-                    fontSize: 19,
-                    fontWeight: 700,
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: isActive ? theme.accent : isDone ? theme.success : theme.textMuted,
                     textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
                   }}
                 >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: railColor,
+                    }}
+                  />
                   {step.status}
                 </div>
               </div>
@@ -230,24 +286,24 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
         </div>
       ) : null}
 
-      {/* Terminal CLI Progressive Typing */}
+      {/* Terminal CLI Progressive Typing: Neutral Matte Charcoal #0c0c0e */}
       {variant === 'terminal' ? (
         <div
           style={{
             flex: 1,
-            borderRadius: 22,
+            borderRadius: 14,
             overflow: 'hidden',
-            background: '#0a0d12',
-            border: `1px solid ${theme.border}`,
-            boxShadow: '0 28px 72px rgba(0,0,0,0.45)',
+            background: '#0c0c0e',
+            border: `1px solid ${theme.isLight ? 'rgba(20,20,22,0.16)' : theme.borderStrong}`,
+            boxShadow: '0 20px 56px rgba(0,0,0,0.36)',
             display: 'flex',
             flexDirection: 'column',
           }}
         >
           <div
             style={{
-              height: 48,
-              background: '#141923',
+              height: 46,
+              background: '#141417',
               borderBottom: '1px solid rgba(255,255,255,0.08)',
               padding: '0 22px',
               display: 'flex',
@@ -255,12 +311,12 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
               justifyContent: 'space-between',
             }}
           >
-            <div style={{ display: 'flex', gap: 10 }}>
-              <span style={{ width: 13, height: 13, borderRadius: '50%', background: '#ef4444' }} />
-              <span style={{ width: 13, height: 13, borderRadius: '50%', background: '#f59e0b' }} />
-              <span style={{ width: 13, height: 13, borderRadius: '50%', background: '#10b981' }} />
+            <div style={{ display: 'flex', gap: 9 }}>
+              <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+              <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+              <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
             </div>
-            <div style={{ fontFamily: theme.fontMono, fontSize: 18, color: '#94a3b8' }}>
+            <div style={{ fontFamily: theme.fontMono, fontSize: 17, color: '#71717a' }}>
               coodance-cli — zsh
             </div>
             <div style={{ width: 48 }} />
@@ -269,17 +325,19 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
           <div
             style={{
               flex: 1,
-              padding: '34px 40px',
+              padding: '32px 40px',
               fontFamily: theme.fontMono,
-              fontSize: 25,
-              lineHeight: 1.75,
+              fontSize: 24,
+              lineHeight: 1.78,
               display: 'flex',
               flexDirection: 'column',
-              gap: 10,
+              gap: 9,
             }}
           >
             {terminalLines.map((line, idx) => {
-              const revealFrame = Math.round((idx / Math.max(1, terminalLines.length)) * (durationInFrames * 0.65));
+              const revealFrame = Math.round(
+                (idx / Math.max(1, terminalLines.length)) * (durationInFrames * 0.65),
+              );
               if (frame < revealFrame) return null;
               const isCmd = line.trim().startsWith('$');
               const isOk = line.trim().startsWith('✔') || line.trim().startsWith('✓');
@@ -290,12 +348,19 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
                 <div
                   key={idx}
                   style={{
-                    color: isCmd ? '#f59e0b' : isOk ? '#34d399' : '#cbd5e1',
-                    fontWeight: isCmd ? 700 : 500,
+                    color: isCmd ? '#ececef' : isOk ? '#4cb487' : '#a1a1aa',
+                    fontWeight: isCmd ? 600 : 400,
                     whiteSpace: 'pre-wrap',
                   }}
                 >
-                  {line.slice(0, charsShown)}
+                  {isCmd ? (
+                    <>
+                      <span style={{ color: '#d99b26' }}>$</span>
+                      {line.slice(1, charsShown)}
+                    </>
+                  ) : (
+                    line.slice(0, charsShown)
+                  )}
                   {isCmd && charsShown < line.length ? '▋' : ''}
                 </div>
               );
@@ -304,19 +369,19 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
         </div>
       ) : null}
 
-      {/* Bar Chart */}
+      {/* Bar Chart: Restrained Horizontal Architectural Bars */}
       {variant === 'bar-chart' ? (
         <div
           style={{
             flex: 1,
             background: theme.surface,
             border: `1px solid ${theme.border}`,
-            borderRadius: 24,
-            padding: '44px 52px',
+            borderRadius: 14,
+            padding: '40px 48px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            gap: 26,
+            gap: 28,
           }}
         >
           {(() => {
@@ -330,15 +395,22 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
               const widthPct = (bar.value / maxVal) * 100 * barAnim;
               return (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-                  <div style={{ width: 260, fontSize: 24, fontWeight: 600, color: theme.textSecondary }}>
+                  <div
+                    style={{
+                      width: 260,
+                      fontSize: 23,
+                      fontWeight: bar.highlight ? 600 : 500,
+                      color: bar.highlight ? theme.textPrimary : theme.textSecondary,
+                    }}
+                  >
                     {bar.label}
                   </div>
                   <div
                     style={{
                       flex: 1,
-                      height: 42,
-                      borderRadius: 12,
-                      background: theme.bg,
+                      height: 22,
+                      borderRadius: 4,
+                      background: theme.surfaceInset,
                       overflow: 'hidden',
                     }}
                   >
@@ -346,19 +418,20 @@ export const DataUiDemoScene: React.FC<DataUiDemoSceneProps> = ({
                       style={{
                         width: `${widthPct.toFixed(1)}%`,
                         height: '100%',
-                        borderRadius: 12,
-                        background: bar.highlight ? theme.accent : theme.secondary,
+                        borderRadius: 4,
+                        background: bar.highlight ? theme.accent : theme.textMuted,
                       }}
                     />
                   </div>
                   <div
                     style={{
-                      width: 120,
+                      width: 124,
                       textAlign: 'right',
                       fontFamily: theme.fontMono,
-                      fontSize: 26,
+                      fontSize: 25,
                       fontWeight: 700,
-                      color: theme.textPrimary,
+                      fontVariantNumeric: 'tabular-nums',
+                      color: bar.highlight ? theme.textPrimary : theme.textSecondary,
                     }}
                   >
                     {bar.value}

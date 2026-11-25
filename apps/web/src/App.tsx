@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Sparkles, FolderOpen, Radio } from 'lucide-react';
+import { Group, Panel } from 'react-resizable-panels';
+import { FolderOpen, Play, Radio } from 'lucide-react';
 import {
   DesktopInstallActionResultDto,
   DesktopUpdateStatusDto,
@@ -27,6 +28,14 @@ import { RenderSnapshotsView } from './components/RenderSnapshotsView';
 import { SettingsModal } from './components/SettingsModal';
 import { AgentHubModal } from './components/AgentHubModal';
 import { UpdateModal } from './components/UpdateModal';
+import {
+  Button,
+  CommandPalette,
+  ResizeHandle,
+  StudioInput,
+  StudioTooltipProvider,
+  cn,
+} from './components/ui';
 
 const FALLBACK_UPDATE_SETTINGS: SettingsDto['update'] = {
   autoCheck: true,
@@ -56,6 +65,8 @@ export const App: React.FC = () => {
   const [settingsFocusSection, setSettingsFocusSection] = useState<'general' | 'update'>('general');
   const [showAgentHub, setShowAgentHub] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+
   const [busyDemo, setBusyDemo] = useState(false);
   const [liveProgress, setLiveProgress] = useState<ProgressEventDto | null>(null);
   const [renderLogs, setRenderLogs] = useState<ProgressEventDto[]>([]);
@@ -99,6 +110,18 @@ export const App: React.FC = () => {
     return () => window.clearTimeout(id);
   }, [toast]);
 
+  // Global Cmd+K / Ctrl+K shortcut for Command Palette
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', uiTheme);
     void window.coodanceDesktop?.setThemeBackground?.(uiTheme);
@@ -141,49 +164,44 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleCheckUpdates = useCallback(
-    async (manual = true) => {
-      const desktop = window.coodanceDesktop;
-      if (desktop?.isDesktop && desktop.checkForUpdates) {
-        const next = await desktop.checkForUpdates({ manual });
-        if (next) setUpdateStatus(next);
-        return;
-      }
+  const handleCheckUpdates = useCallback(async (manual = true) => {
+    const desktop = window.coodanceDesktop;
+    if (desktop?.isDesktop && desktop.checkForUpdates) {
+      const next = await desktop.checkForUpdates({ manual });
+      if (next) setUpdateStatus(next);
+      return;
+    }
 
-      // Web / Docker self-hosted check
-      setUpdateStatus((prev) => ({ ...prev, phase: 'checking', error: null }));
-      try {
-        const res = await apiRequest<{
-          result: UpdateCheckResultDto;
-          updateSettings: SettingsDto['update'];
-        }>('/api/update/check', {
-          method: 'POST',
-          body: JSON.stringify({}),
-        });
-        setSettings((prev) => (prev ? { ...prev, update: res.updateSettings } : prev));
-        setUpdateStatus((prev) => ({
-          ...prev,
-          phase: res.result.updateAvailable ? 'available' : 'up-to-date',
-          currentVersion: res.result.currentVersion,
-          target: res.result.target,
-          checkResult: res.result,
-          download: null,
-          error: null,
-          lastCheckedAt: res.result.checkedAt,
-        }));
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setUpdateStatus((prev) => ({
-          ...prev,
-          phase: manual ? 'error' : prev.phase === 'checking' ? 'idle' : prev.phase,
-          error: manual ? msg : prev.error,
-        }));
-      }
-    },
-    [],
-  );
+    setUpdateStatus((prev) => ({ ...prev, phase: 'checking', error: null }));
+    try {
+      const res = await apiRequest<{
+        result: UpdateCheckResultDto;
+        updateSettings: SettingsDto['update'];
+      }>('/api/update/check', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      setSettings((prev) => (prev ? { ...prev, update: res.updateSettings } : prev));
+      setUpdateStatus((prev) => ({
+        ...prev,
+        phase: res.result.updateAvailable ? 'available' : 'up-to-date',
+        currentVersion: res.result.currentVersion,
+        target: res.result.target,
+        checkResult: res.result,
+        download: null,
+        error: null,
+        lastCheckedAt: res.result.checkedAt,
+      }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setUpdateStatus((prev) => ({
+        ...prev,
+        phase: manual ? 'error' : prev.phase === 'checking' ? 'idle' : prev.phase,
+        error: manual ? msg : prev.error,
+      }));
+    }
+  }, []);
 
-  // Web/Docker mode: initial status hydration + 5s delayed auto-check + 12h periodic check
   useEffect(() => {
     if (isDesktop || authNeeded) return;
     let mounted = true;
@@ -276,7 +294,9 @@ export const App: React.FC = () => {
         const next = await desktop.skipUpdateVersion(version);
         if (next) setUpdateStatus(next);
         setSettings((prev) =>
-          prev ? { ...prev, update: { ...(prev.update || FALLBACK_UPDATE_SETTINGS), skippedVersion: version } } : prev,
+          prev
+            ? { ...prev, update: { ...(prev.update || FALLBACK_UPDATE_SETTINGS), skippedVersion: version } }
+            : prev,
         );
       } else {
         const res = await apiRequest<{
@@ -289,7 +309,8 @@ export const App: React.FC = () => {
         setSettings((prev) => (prev ? { ...prev, update: res.updateSettings } : prev));
         setUpdateStatus((prev) => ({
           ...prev,
-          checkResult: res.lastCheck || (prev.checkResult ? { ...prev.checkResult, isSkipped: Boolean(version) } : null),
+          checkResult:
+            res.lastCheck || (prev.checkResult ? { ...prev.checkResult, isSkipped: Boolean(version) } : null),
         }));
       }
       notify(version ? `已跳过 v${version} 的更新提醒` : '已恢复版本更新提醒', 'info');
@@ -371,7 +392,6 @@ export const App: React.FC = () => {
     void loadAll();
   }, []);
 
-  // Connect WebSocket for live progress & external file hot-reload
   useEffect(() => {
     if (authNeeded) return;
     return connectStudioWs(
@@ -466,30 +486,39 @@ export const App: React.FC = () => {
     }
   };
 
+  const openUpdateCenter = () => {
+    setShowUpdateModal(true);
+    if (updateStatus.phase === 'idle') {
+      void handleCheckUpdates(true);
+    }
+  };
+
   const isFramelessDesktop = Boolean(window.coodanceDesktop?.customTitleBar);
-  const shellClasses = [
-    'studio-shell',
-    isFramelessDesktop ? 'desktop-frameless' : '',
-    windowState.isMaximized ? 'is-maximized' : '',
-    windowState.isFullScreen ? 'is-fullscreen' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const shellClasses = cn(
+    'studio-shell flex flex-col w-full h-full bg-canvas overflow-hidden relative',
+    isFramelessDesktop && 'desktop-frameless',
+    windowState.isMaximized && 'is-maximized',
+    windowState.isFullScreen && 'is-fullscreen',
+  );
 
   if (authNeeded) {
     return (
       <div
-        className={`auth-shell ${isFramelessDesktop ? 'desktop-frameless' : ''} ${windowState.isMaximized ? 'is-maximized' : ''}`}
+        className={cn(
+          'auth-shell flex flex-col w-full h-full bg-canvas relative',
+          isFramelessDesktop && 'desktop-frameless',
+          windowState.isMaximized && 'is-maximized',
+        )}
       >
         {isFramelessDesktop ? (
-          <header className="studio-topbar is-desktop has-window-controls auth-topbar">
-            <div className="topbar-left">
-              <div className="brand-group">
-                <BrandMark size="sm" />
-                <h1 className="brand-title">CooDance</h1>
-              </div>
+          <header className="studio-topbar is-desktop has-window-controls">
+            <div className="flex items-center gap-2">
+              <BrandMark size="sm" />
+              <span className="text-[13.5px] font-bold tracking-[-0.02em] text-text-primary">
+                CooDance
+              </span>
             </div>
-            <div className="topbar-right">
+            <div className="flex items-center h-full">
               <DesktopWindowControls
                 lang={lang}
                 windowState={windowState}
@@ -498,32 +527,42 @@ export const App: React.FC = () => {
             </div>
           </header>
         ) : null}
-        <div className="empty-stage" style={{ flex: 1 }}>
-          <div className="panel-card" style={{ width: 380, padding: 22, gap: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="w-[380px] p-6 rounded-[10px] bg-panel border border-border-strong shadow-studio-lg flex flex-col gap-3.5">
+            <div className="flex items-center gap-3">
               <BrandMark size="md" />
-              <h2 className="panel-title" style={{ margin: 0 }}>CooDance Web 访问认证</h2>
+              <div>
+                <h2 className="m-0 text-[14px] font-semibold text-text-primary">
+                  CooDance Web 访问认证
+                </h2>
+                <div className="text-[11.5px] text-text-muted mt-0.5">
+                  自托管访问口令保护
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', textAlign: 'left' }}>
-              当前自托管服务启用了访问口令保护，请输入 <code className="mono">COODANCE_ACCESS_TOKEN</code>。
+            <div className="text-[12px] text-text-secondary leading-relaxed">
+              当前自托管服务启用了访问口令保护，请输入{' '}
+              <code className="font-mono text-text-primary">COODANCE_ACCESS_TOKEN</code>。
             </div>
-            <input
+            <StudioInput
               type="password"
-              className="input mono"
+              mono
               placeholder="输入访问口令..."
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
             />
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
+              size="md"
               onClick={() => {
                 setStoredToken(tokenInput.trim());
                 void loadAll();
               }}
+              className="w-full"
             >
               解锁工作台
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -531,248 +570,292 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className={shellClasses}>
-      {/* Custom Integrated Studio TitleBar & App Menu */}
-      <StudioTitleBar
-        lang={lang}
-        uiTheme={uiTheme}
-        activeTab={activeTab}
-        activeSlug={activeSlug}
-        windowState={windowState}
-        updateStatus={updateStatus}
-        onSelectTab={setActiveTab}
-        onOpenAgentHub={() => setShowAgentHub(true)}
-        onOpenUpdateModal={() => {
-          setShowUpdateModal(true);
-          if (updateStatus.phase === 'idle') {
-            void handleCheckUpdates(true);
-          }
-        }}
-        onQuickSnapshot={() => void handleQuickSnapshot()}
-        onToggleLang={() => setLang((l) => (l === 'zh-CN' ? 'en-US' : 'zh-CN'))}
-        onToggleTheme={() => setUiTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
-        onOpenSettings={() => {
-          setSettingsFocusSection('general');
-          setShowSettings(true);
-        }}
-        onWindowStateChange={setWindowState}
-      />
-
-      {/* Left Project Switcher Sidebar */}
-      <ProjectSidebar
-        lang={lang}
-        workspaceDir={workspaceDir}
-        projects={projects}
-        activeSlug={activeSlug}
-        busyDemo={busyDemo}
-        onSelectProject={(slug) => void handleSelectProject(slug)}
-        onCreateProject={handleCreateProject}
-        onCreateDemo={handleCreateDemo}
-        onDeleteProject={handleDeleteProject}
-        onChangeWorkspaceDir={async (dir) => {
-          if (settings) {
-            await handleSaveSettings({ ...settings, workspaceDir: dir });
-          }
-        }}
-      />
-
-      {/* Main Content Stage */}
-      <main className="studio-main">
-        {/* Live Progress Strip */}
-        {liveProgress ? (
-          <div className="live-progress-banner">
-            <span className="status-dot busy" />
-            <span className="chip chip-accent mono">{liveProgress.kind.toUpperCase()}</span>
-            <div className="progress-rail">
-              <div
-                className="progress-fill"
-                style={{ width: `${Math.round(liveProgress.progress * 100)}%` }}
-              />
-            </div>
-            <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{liveProgress.message}</span>
-          </div>
-        ) : null}
-
-        {/* Active Project Status Strip */}
-        {workspace ? (
-          <div className="workspace-status-strip">
-            <div className="status-left">
-              <span className="status-dot" />
-              <strong style={{ color: 'var(--text-primary)' }}>{workspace.summary.title}</strong>
-              <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {workspace.summary.path}
-              </span>
-              {window.coodanceDesktop?.isDesktop ? (
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  style={{ height: 23, fontSize: 11 }}
-                  onClick={() => void window.coodanceDesktop?.revealPath(workspace.summary.path)}
-                >
-                  <FolderOpen size={11} /> 打开目录
-                </button>
-              ) : null}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {lastHotReload ? (
-                <span className="chip chip-emerald mono">
-                  <Radio size={10} /> 热更新: {lastHotReload}
-                </span>
-              ) : (
-                <span className="chip mono">
-                  <Radio size={10} style={{ color: 'var(--emerald)' }} /> 磁盘双向监听中
-                </span>
-              )}
-              {toast ? (
-                <span
-                  className={`chip ${toast.level === 'error' ? '' : toast.level === 'success' ? 'chip-emerald' : 'chip-cyan'}`}
-                  style={
-                    toast.level === 'error'
-                      ? { background: 'var(--danger-soft)', color: 'var(--danger)', borderColor: 'transparent' }
-                      : undefined
-                  }
-                >
-                  {toast.msg}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        {/* Workspace Active View or Empty Welcome State */}
-        {!workspace ? (
-          <div className="empty-stage">
-            <BrandMark size="lg" />
-            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>
-              {t(lang, 'emptyTitle')}
-            </h2>
-            <p style={{ margin: 0, maxWidth: 540, fontSize: 13.5, lineHeight: 1.7 }}>
-              {t(lang, 'emptyDesc')}
-            </p>
-            <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={busyDemo}
-                onClick={() => void handleCreateDemo()}
-              >
-                <Sparkles size={14} />
-                {busyDemo ? '正在初始化 6 镜实机示例...' : t(lang, 'createDemo')}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {activeTab === 'script' && settings ? (
-              <ScriptTtsView
-                lang={lang}
-                workspace={workspace}
-                settings={settings}
-                onRefresh={async () => {
-                  await loadAll(workspace.summary.slug);
-                }}
-                onNotify={notify}
-              />
-            ) : null}
-
-            {activeTab === 'assets' ? (
-              <AssetInspectorView
-                lang={lang}
-                workspace={workspace}
-                onRefresh={async () => {
-                  await loadAll(workspace.summary.slug);
-                }}
-                onNotify={notify}
-                onPickVideoTrim={(assetPath, trimStartSec) => {
-                  setPendingTrimPick({ assetPath, trimStartSec });
-                  setActiveTab('storyboard');
-                }}
-              />
-            ) : null}
-
-            {activeTab === 'storyboard' ? (
-              <StoryboardStudioView
-                lang={lang}
-                workspace={workspace}
-                onRefresh={async () => {
-                  await loadAll(workspace.summary.slug);
-                }}
-                onNotify={notify}
-                pendingTrimPick={pendingTrimPick}
-                onConsumedTrimPick={() => setPendingTrimPick(null)}
-              />
-            ) : null}
-
-            {activeTab === 'render' ? (
-              <RenderSnapshotsView
-                lang={lang}
-                workspace={workspace}
-                renderLogs={renderLogs}
-                onRefresh={async () => {
-                  await loadAll(workspace.summary.slug);
-                }}
-                onNotify={notify}
-              />
-            ) : null}
-          </>
-        )}
-      </main>
-
-      {/* Settings Modal */}
-      {showSettings && settings ? (
-        <SettingsModal
+    <StudioTooltipProvider>
+      <div className={shellClasses}>
+        {/* 44px Precision Topbar */}
+        <StudioTitleBar
           lang={lang}
-          settings={settings}
-          ffmpeg={ffmpeg}
+          uiTheme={uiTheme}
+          activeTab={activeTab}
+          activeSlug={activeSlug}
+          windowState={windowState}
           updateStatus={updateStatus}
-          focusSection={settingsFocusSection}
-          onClose={() => setShowSettings(false)}
-          onSave={handleSaveSettings}
-          onOpenUpdateCenter={() => {
-            setShowUpdateModal(true);
-            if (updateStatus.phase === 'idle') {
-              void handleCheckUpdates(true);
-            }
-          }}
-          onTestMirrors={handleTestUpdateMirrors}
-        />
-      ) : null}
-
-      {/* Software Update Center Modal */}
-      {showUpdateModal ? (
-        <UpdateModal
-          lang={lang}
-          isDesktop={isDesktop}
-          status={updateStatus}
-          updateSettings={settings?.update || FALLBACK_UPDATE_SETTINGS}
-          onClose={() => setShowUpdateModal(false)}
-          onCheckNow={() => handleCheckUpdates(true)}
-          onStartDownload={handleStartUpdateDownload}
-          onCancelDownload={handleCancelUpdateDownload}
-          onInstallNow={handleInstallUpdate}
-          onQuitForInstall={handleQuitForInstall}
-          onSkipVersion={handleSkipUpdateVersion}
+          onSelectTab={setActiveTab}
+          onOpenCommandPalette={() => setShowCommandPalette(true)}
+          onOpenAgentHub={() => setShowAgentHub(true)}
+          onOpenUpdateModal={openUpdateCenter}
+          onQuickSnapshot={() => void handleQuickSnapshot()}
+          onToggleLang={() => setLang((l) => (l === 'zh-CN' ? 'en-US' : 'zh-CN'))}
+          onToggleTheme={() => setUiTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
           onOpenSettings={() => {
-            setShowUpdateModal(false);
-            setSettingsFocusSection('update');
+            setSettingsFocusSection('general');
             setShowSettings(true);
           }}
-          onRevealDownload={handleRevealUpdateDownload}
-          onNotify={notify}
+          onWindowStateChange={setWindowState}
         />
-      ) : null}
 
-      {/* External AI Agent Hub (MCP + Skill) Modal */}
-      {showAgentHub && settings ? (
-        <AgentHubModal
+        {/* Edge-to-Edge Resizable Main Body: Project Sidebar (248px) + Stage */}
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          <Group orientation="horizontal" className="flex-1 min-h-0">
+            <Panel defaultSize="248px" minSize="200px" maxSize="360px">
+              <ProjectSidebar
+                lang={lang}
+                workspaceDir={workspaceDir}
+                projects={projects}
+                activeSlug={activeSlug}
+                busyDemo={busyDemo}
+                onSelectProject={(slug) => void handleSelectProject(slug)}
+                onCreateProject={handleCreateProject}
+                onCreateDemo={handleCreateDemo}
+                onDeleteProject={handleDeleteProject}
+                onChangeWorkspaceDir={async (dir) => {
+                  if (settings) {
+                    await handleSaveSettings({ ...settings, workspaceDir: dir });
+                  }
+                }}
+              />
+            </Panel>
+
+            <ResizeHandle />
+
+            <Panel minSize="48%">
+              <main className="h-full w-full flex flex-col min-w-0 min-h-0 overflow-hidden bg-canvas">
+                {/* Live Job Progress Banner */}
+                {liveProgress ? (
+                  <div className="flex items-center gap-3 px-3.5 h-8 bg-panel border-b border-border-subtle shrink-0 text-[11.5px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                    <span className="font-mono text-[10.5px] font-semibold uppercase text-accent">
+                      {liveProgress.kind}
+                    </span>
+                    <div className="w-[160px] h-1 rounded-full bg-hover overflow-hidden shrink-0">
+                      <div
+                        className="h-full bg-accent transition-all duration-150"
+                        style={{ width: `${Math.round(liveProgress.progress * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-text-primary truncate">{liveProgress.message}</span>
+                  </div>
+                ) : null}
+
+                {/* 32px Precision Project Status Bar */}
+                {workspace ? (
+                  <div className="flex items-center justify-between gap-3 px-3.5 h-8 bg-panel/75 border-b border-border-subtle text-[11.5px] shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald shrink-0" />
+                      <span className="font-semibold text-text-primary truncate">
+                        {workspace.summary.title}
+                      </span>
+                      <span className="font-mono text-[11px] text-text-muted truncate hidden md:inline">
+                        {workspace.summary.path}
+                      </span>
+                      {window.coodanceDesktop?.isDesktop ? (
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          onClick={() => void window.coodanceDesktop?.revealPath(workspace.summary.path)}
+                          className="h-5 px-1.5 text-[10.5px]"
+                        >
+                          <FolderOpen size={11} />
+                          <span>{lang === 'zh-CN' ? '打开目录' : 'Reveal'}</span>
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 font-mono text-[10.5px] text-text-muted">
+                      <Radio
+                        size={11}
+                        className={lastHotReload ? 'text-accent' : 'text-emerald'}
+                      />
+                      <span className="truncate max-w-[260px]">
+                        {lastHotReload
+                          ? `${lang === 'zh-CN' ? '热更新' : 'Sync'}: ${lastHotReload}`
+                          : lang === 'zh-CN'
+                            ? '磁盘双向监听中'
+                            : 'Disk watch active'}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Active Stage View or Clean Welcome State */}
+                {!workspace ? (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-4 p-10 text-center">
+                    <BrandMark size="lg" />
+                    <div className="flex flex-col gap-1.5 max-w-[500px]">
+                      <h2 className="m-0 text-[20px] font-bold tracking-[-0.025em] text-text-primary">
+                        {t(lang, 'emptyTitle')}
+                      </h2>
+                      <p className="m-0 text-[13px] leading-relaxed text-text-secondary">
+                        {t(lang, 'emptyDesc')}
+                      </p>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      disabled={busyDemo}
+                      onClick={() => void handleCreateDemo()}
+                    >
+                      <Play size={13} />
+                      <span>
+                        {busyDemo ? '正在初始化 6 镜实机示例...' : t(lang, 'createDemo')}
+                      </span>
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {activeTab === 'script' && settings ? (
+                      <ScriptTtsView
+                        lang={lang}
+                        uiTheme={uiTheme}
+                        workspace={workspace}
+                        settings={settings}
+                        onRefresh={async () => {
+                          await loadAll(workspace.summary.slug);
+                        }}
+                        onNotify={notify}
+                      />
+                    ) : null}
+
+                    {activeTab === 'assets' ? (
+                      <AssetInspectorView
+                        lang={lang}
+                        workspace={workspace}
+                        onRefresh={async () => {
+                          await loadAll(workspace.summary.slug);
+                        }}
+                        onNotify={notify}
+                        onPickVideoTrim={(assetPath, trimStartSec) => {
+                          setPendingTrimPick({ assetPath, trimStartSec });
+                          setActiveTab('storyboard');
+                        }}
+                      />
+                    ) : null}
+
+                    {activeTab === 'storyboard' ? (
+                      <StoryboardStudioView
+                        lang={lang}
+                        uiTheme={uiTheme}
+                        workspace={workspace}
+                        onRefresh={async () => {
+                          await loadAll(workspace.summary.slug);
+                        }}
+                        onNotify={notify}
+                        pendingTrimPick={pendingTrimPick}
+                        onConsumedTrimPick={() => setPendingTrimPick(null)}
+                      />
+                    ) : null}
+
+                    {activeTab === 'render' ? (
+                      <RenderSnapshotsView
+                        lang={lang}
+                        uiTheme={uiTheme}
+                        workspace={workspace}
+                        renderLogs={renderLogs}
+                        onRefresh={async () => {
+                          await loadAll(workspace.summary.slug);
+                        }}
+                        onNotify={notify}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </main>
+            </Panel>
+          </Group>
+        </div>
+
+        {/* Bottom-Right Floating Toast Notification */}
+        {toast ? (
+          <div
+            role="status"
+            className={cn(
+              'fixed bottom-4 right-4 z-[120] max-w-[420px] px-3.5 py-2.5 rounded-[8px]',
+              'bg-elevated border border-border-strong shadow-studio-lg text-[12px] text-text-primary',
+              'border-l-2',
+              toast.level === 'error'
+                ? 'border-l-danger'
+                : toast.level === 'success'
+                  ? 'border-l-emerald'
+                  : 'border-l-accent',
+            )}
+          >
+            {toast.msg}
+          </div>
+        ) : null}
+
+        {/* Global Command Palette (Cmd+K / Ctrl+K) */}
+        <CommandPalette
+          open={showCommandPalette}
+          onOpenChange={setShowCommandPalette}
           lang={lang}
-          settings={settings}
-          activeProjectSlug={activeSlug}
-          onClose={() => setShowAgentHub(false)}
-          onSaveSettings={handleSaveSettings}
-          onNotify={notify}
+          uiTheme={uiTheme}
+          projects={projects}
+          activeSlug={activeSlug}
+          onSelectTab={setActiveTab}
+          onSelectProject={(slug) => void handleSelectProject(slug)}
+          onQuickSnapshot={() => void handleQuickSnapshot()}
+          onOpenSettings={() => {
+            setSettingsFocusSection('general');
+            setShowSettings(true);
+          }}
+          onOpenAgentHub={() => setShowAgentHub(true)}
+          onOpenUpdateModal={openUpdateCenter}
+          onToggleTheme={() => setUiTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
+          onToggleLang={() => setLang((l) => (l === 'zh-CN' ? 'en-US' : 'zh-CN'))}
         />
-      ) : null}
-    </div>
+
+        {/* Settings Modal */}
+        {showSettings && settings ? (
+          <SettingsModal
+            lang={lang}
+            settings={settings}
+            ffmpeg={ffmpeg}
+            updateStatus={updateStatus}
+            focusSection={settingsFocusSection}
+            onClose={() => setShowSettings(false)}
+            onSave={handleSaveSettings}
+            onOpenUpdateCenter={openUpdateCenter}
+            onTestMirrors={handleTestUpdateMirrors}
+          />
+        ) : null}
+
+        {/* Software Update Center Modal */}
+        {showUpdateModal ? (
+          <UpdateModal
+            lang={lang}
+            isDesktop={isDesktop}
+            status={updateStatus}
+            updateSettings={settings?.update || FALLBACK_UPDATE_SETTINGS}
+            onClose={() => setShowUpdateModal(false)}
+            onCheckNow={() => handleCheckUpdates(true)}
+            onStartDownload={handleStartUpdateDownload}
+            onCancelDownload={handleCancelUpdateDownload}
+            onInstallNow={handleInstallUpdate}
+            onQuitForInstall={handleQuitForInstall}
+            onSkipVersion={handleSkipUpdateVersion}
+            onOpenSettings={() => {
+              setShowUpdateModal(false);
+              setSettingsFocusSection('update');
+              setShowSettings(true);
+            }}
+            onRevealDownload={handleRevealUpdateDownload}
+            onNotify={notify}
+          />
+        ) : null}
+
+        {/* External AI Agent Hub Modal */}
+        {showAgentHub && settings ? (
+          <AgentHubModal
+            lang={lang}
+            uiTheme={uiTheme}
+            settings={settings}
+            activeProjectSlug={activeSlug}
+            onClose={() => setShowAgentHub(false)}
+            onSaveSettings={handleSaveSettings}
+            onNotify={notify}
+          />
+        ) : null}
+      </div>
+    </StudioTooltipProvider>
   );
 };

@@ -88,14 +88,18 @@ export const VideoClipScene: React.FC<VideoClipSceneProps> = ({
         style={{
           width: '100%',
           height: '100%',
-          borderRadius: showDeviceFrame ? 22 : 0,
+          borderRadius: showDeviceFrame ? 14 : 0,
           overflow: 'hidden',
-          background: '#05070a',
-          border: showDeviceFrame ? `1px solid ${theme.border}` : 'none',
-          boxShadow: showDeviceFrame ? '0 32px 80px rgba(0,0,0,0.45)' : 'none',
+          background: '#09090b',
+          border: showDeviceFrame ? `1px solid ${theme.borderStrong}` : 'none',
+          boxShadow: showDeviceFrame
+            ? theme.isLight
+              ? '0 22px 54px rgba(20,20,22,0.12)'
+              : '0 28px 72px rgba(0,0,0,0.46)'
+            : 'none',
           display: 'flex',
           flexDirection: 'column',
-          transform: `scale(${interpolate(entrance, [0, 1], [0.97, 1])})`,
+          transform: `scale(${interpolate(entrance, [0, 1], [0.975, 1])})`,
           opacity: entrance,
         }}
       >
@@ -108,20 +112,20 @@ export const VideoClipScene: React.FC<VideoClipSceneProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '0 22px',
+              padding: '0 20px',
               flexShrink: 0,
             }}
           >
-            <div style={{ display: 'flex', gap: 9 }}>
-              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }} />
-              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#f59e0b' }} />
-              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#10b981' }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: theme.borderStrong }} />
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: theme.borderStrong }} />
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: theme.borderStrong }} />
             </div>
             <div
               style={{
                 fontFamily: theme.fontMono,
-                fontSize: 18,
-                color: theme.textMuted,
+                fontSize: 17,
+                color: theme.textSecondary,
                 letterSpacing: '0.02em',
               }}
             >
@@ -131,8 +135,9 @@ export const VideoClipScene: React.FC<VideoClipSceneProps> = ({
               style={{
                 fontFamily: theme.fontMono,
                 fontSize: 16,
-                color: theme.accent,
+                color: theme.textMuted,
                 fontWeight: 600,
+                fontVariantNumeric: 'tabular-nums',
               }}
             >
               {playbackRate.toFixed(2)}×

@@ -26,12 +26,12 @@ export const SubtitleLayer: React.FC<SubtitleLayerProps> = ({
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-  const translateY = interpolate(localFrame, [0, 6], [10, 0], {
+  const translateY = interpolate(localFrame, [0, 6], [8, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
 
-  const bottomOffset = styleConfig.position === 'lower-third' ? 140 : 88;
+  const bottomOffset = styleConfig.position === 'lower-third' ? 136 : 86;
 
   return (
     <div
@@ -48,19 +48,19 @@ export const SubtitleLayer: React.FC<SubtitleLayerProps> = ({
     >
       <div
         style={{
-          padding: '14px 32px',
-          borderRadius: 14,
+          padding: '13px 28px',
+          borderRadius: 10,
           background: theme.subtitleBg,
-          border: `1px solid ${theme.border}`,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
           color: theme.subtitleText,
           fontFamily: theme.fontSans,
           fontSize: styleConfig.fontSize || 42,
           fontWeight: 700,
           lineHeight: 1.35,
-          letterSpacing: '0.015em',
+          letterSpacing: '0.01em',
           textAlign: 'center',
           maxWidth: 1520,
-          boxShadow: '0 14px 36px rgba(0,0,0,0.38)',
+          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.34)',
           opacity,
           transform: `translateY(${translateY}px)`,
         }}

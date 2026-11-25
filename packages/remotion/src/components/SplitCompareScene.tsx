@@ -26,17 +26,16 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
   const leftPoints = Array.isArray(props.leftPoints) ? props.leftPoints.map(String) : [];
   const rightPoints = Array.isArray(props.rightPoints) ? props.rightPoints.map(String) : [];
 
-  const leftIn = spring({ frame, fps, config: { damping: 16, stiffness: 120 } });
-  const rightIn = spring({ frame: Math.max(0, frame - 8), fps, config: { damping: 16, stiffness: 120 } });
+  const leftIn = spring({ frame, fps, config: { damping: 18, stiffness: 120 } });
+  const rightIn = spring({ frame: Math.max(0, frame - 6), fps, config: { damping: 18, stiffness: 120 } });
 
-  const renderPane = (side: 'left' | 'right') => {
+  const renderColumn = (side: 'left' | 'right') => {
     const isRight = side === 'right';
     const anim = isRight ? rightIn : leftIn;
     const title = isRight ? rightTitle : leftTitle;
     const badge = isRight ? badgeRight : badgeLeft;
     const asset = isRight ? rightAsset : leftAsset;
     const points = isRight ? rightPoints : leftPoints;
-    const accentColor = isRight ? theme.success : theme.textMuted;
 
     return (
       <div
@@ -44,26 +43,33 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
           flex: 1,
           height: '100%',
           background: isRight ? theme.surfaceElevated : theme.surface,
-          border: `1px solid ${theme.border}`,
-          borderRadius: 24,
-          padding: '44px 48px',
+          borderTop: `3px solid ${isRight ? theme.accent : 'transparent'}`,
+          padding: '44px 52px',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           gap: 28,
           opacity: anim,
-          transform: `translateX(${interpolate(anim, [0, 1], [isRight ? 40 : -40, 0])}px)`,
-          boxShadow: isRight ? '0 24px 64px rgba(0,0,0,0.28)' : 'none',
+          transform: `translateY(${interpolate(anim, [0, 1], [16, 0])}px)`,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            paddingBottom: 22,
+            borderBottom: `1px solid ${theme.border}`,
+          }}
+        >
           <h2
             style={{
               margin: 0,
-              fontSize: 42,
+              fontSize: 40,
               fontWeight: 800,
               color: theme.textPrimary,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.03em',
             }}
           >
             {title}
@@ -71,12 +77,14 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
           {badge ? (
             <span
               style={{
-                padding: '8px 18px',
-                borderRadius: 999,
-                background: isRight ? theme.accentSoft : 'rgba(148,163,184,0.14)',
-                color: isRight ? theme.accent : theme.textSecondary,
-                fontSize: 20,
-                fontWeight: 700,
+                padding: '5px 12px',
+                borderRadius: 6,
+                border: `1px solid ${isRight ? theme.borderStrong : theme.border}`,
+                background: isRight ? theme.accentSoft : theme.surfaceInset,
+                color: isRight ? theme.accent : theme.textMuted,
+                fontFamily: theme.fontMono,
+                fontSize: 18,
+                fontWeight: 600,
               }}
             >
               {badge}
@@ -84,20 +92,11 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
           ) : null}
         </div>
 
-        <div
-          style={{
-            height: 3,
-            width: '100%',
-            background: isRight ? theme.accent : theme.border,
-            borderRadius: 2,
-          }}
-        />
-
         {asset ? (
           <div
             style={{
               flex: 1,
-              borderRadius: 16,
+              borderRadius: 10,
               overflow: 'hidden',
               background: '#000',
               border: `1px solid ${theme.border}`,
@@ -106,10 +105,10 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
             <Img src={asset} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 22, flex: 1, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center' }}>
             {points.map((pt, idx) => {
               const ptAnim = spring({
-                frame: Math.max(0, frame - 12 - idx * 7),
+                frame: Math.max(0, frame - 10 - idx * 6),
                 fps,
                 config: { damping: 18, stiffness: 120 },
               });
@@ -119,29 +118,22 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: 18,
-                    padding: '22px 24px',
-                    borderRadius: 16,
-                    background: theme.bg,
-                    border: `1px solid ${theme.border}`,
+                    gap: 22,
+                    padding: '28px 0',
+                    borderBottom: idx < points.length - 1 ? `1px solid ${theme.border}` : 'none',
                     opacity: ptAnim,
-                    transform: `translateY(${interpolate(ptAnim, [0, 1], [18, 0])}px)`,
+                    transform: `translateY(${interpolate(ptAnim, [0, 1], [12, 0])}px)`,
                   }}
                 >
                   <div
                     style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 10,
-                      background: isRight ? theme.accentSoft : 'rgba(148,163,184,0.14)',
-                      color: accentColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: 20,
+                      width: 28,
+                      fontFamily: theme.fontMono,
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: isRight ? theme.accent : theme.textMuted,
                       flexShrink: 0,
-                      marginTop: 2,
+                      paddingTop: 3,
                     }}
                   >
                     {isRight ? '✓' : '—'}
@@ -149,9 +141,9 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
                   <div
                     style={{
                       fontSize: 28,
-                      lineHeight: 1.45,
+                      lineHeight: 1.48,
                       color: isRight ? theme.textPrimary : theme.textSecondary,
-                      fontWeight: isRight ? 600 : 500,
+                      fontWeight: isRight ? 600 : 400,
                     }}
                   >
                     {pt}
@@ -170,16 +162,28 @@ export const SplitCompareScene: React.FC<SplitCompareSceneProps> = ({
       style={{
         width: '100%',
         height: '100%',
-        padding: '74px 104px 176px',
+        padding: '68px 104px 168px',
         boxSizing: 'border-box',
         display: 'flex',
-        gap: 36,
         alignItems: 'stretch',
         fontFamily: theme.fontSans,
       }}
     >
-      {renderPane('left')}
-      {renderPane('right')}
+      <div
+        style={{
+          flex: 1,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gap: 1,
+          background: theme.border,
+          border: `1px solid ${theme.border}`,
+          borderRadius: 14,
+          overflow: 'hidden',
+        }}
+      >
+        {renderColumn('left')}
+        {renderColumn('right')}
+      </div>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  X,
   Bot,
   Plug,
   Copy,
@@ -30,9 +29,19 @@ import {
   skillZipDownloadUrl,
 } from '../api';
 import { UiLang } from '../i18n';
+import {
+  Button,
+  CodeEditor,
+  NumberScrubInput,
+  SegmentedTabs,
+  StudioDialog,
+  StudioSwitch,
+  cn,
+} from './ui';
 
 interface AgentHubModalProps {
   lang: UiLang;
+  uiTheme: 'dark' | 'light';
   settings: SettingsDto;
   activeProjectSlug: string | null;
   onClose: () => void;
@@ -53,6 +62,7 @@ const STAGE_LABEL: Record<string, string> = {
 
 export const AgentHubModal: React.FC<AgentHubModalProps> = ({
   lang,
+  uiTheme,
   settings,
   activeProjectSlug,
   onClose,
@@ -76,6 +86,7 @@ export const AgentHubModal: React.FC<AgentHubModalProps> = ({
 
   const [mcpDraft, setMcpDraft] = useState(() => ({ ...settings.mcp }));
   const [savingGuardrails, setSavingGuardrails] = useState(false);
+  const isZh = lang === 'zh-CN';
 
   useEffect(() => {
     setMcpDraft({ ...settings.mcp });
@@ -221,7 +232,7 @@ export const AgentHubModal: React.FC<AgentHubModalProps> = ({
       await copyText(
         'prompt',
         res.prompt,
-        lang === 'zh-CN'
+        isZh
           ? `已复制工程 ${activeProjectSlug} 的完整上下文 Prompt`
           : `Copied context prompt for ${activeProjectSlug}`,
       );
@@ -234,644 +245,665 @@ export const AgentHubModal: React.FC<AgentHubModalProps> = ({
     skillFiles.find((f) => f.relativePath === activeSkillFile)?.content || '';
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        id="agent-hub-modal"
-        className="modal-window wide"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Bot size={17} style={{ color: 'var(--cyan)' }} />
-            <div>
-              <h3 className="panel-title" style={{ margin: 0 }}>
-                {lang === 'zh-CN'
-                  ? '外部 AI Agent 接入中心 · MCP + Skill 协同引擎'
-                  : 'External AI Agent Hub · MCP + Skill'}
-              </h3>
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                {lang === 'zh-CN'
-                  ? 'MCP 提供 11 个强校验确定性管线工具，Skill 提供 5 阶段编导与外部生图/录屏/SVG 入库 SOP'
-                  : '11 validated MCP tools + 5-stage Code-as-Video Skill SOP with CLI fallback'}
-              </div>
-            </div>
+    <StudioDialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      id="agent-hub-modal"
+      size="xl"
+      title={
+        <>
+          <Bot size={15} className="text-text-secondary" />
+          <span>
+            {isZh
+              ? '外部 AI Agent 接入中心 · MCP + Skill'
+              : 'External AI Agent Hub · MCP + Skill'}
+          </span>
+        </>
+      }
+      description={
+        isZh
+          ? '11 个强校验确定性 MCP 工具 + 5 阶段 Code-as-Video Skill 编导规范'
+          : '11 validated MCP tools + 5-stage Code-as-Video Skill SOP with CLI fallback'
+      }
+      headerExtra={
+        <SegmentedTabs
+          value={tab}
+          onValueChange={setTab}
+          size="xs"
+          items={[
+            {
+              value: 'connect',
+              id: 'agent-tab-connect',
+              label: (
+                <>
+                  <Plug size={11} />
+                  <span>{isZh ? '一键接入' : 'Connect'}</span>
+                </>
+              ),
+            },
+            {
+              value: 'skill',
+              id: 'agent-tab-skill',
+              label: (
+                <>
+                  <BookOpen size={11} />
+                  <span>{isZh ? 'Skill 规范包' : 'Skill Pack'}</span>
+                </>
+              ),
+            },
+            {
+              value: 'tools',
+              id: 'agent-tab-tools',
+              label: (
+                <>
+                  <ShieldCheck size={11} />
+                  <span>{isZh ? '工具与护栏' : 'Tools & Safety'}</span>
+                </>
+              ),
+            },
+          ]}
+        />
+      }
+      footer={
+        <div className="w-full flex items-center justify-between gap-3">
+          <div>
+            {activeProjectSlug ? (
+              <Button size="xs" variant="default" onClick={() => void handleCopyProjectPrompt()}>
+                {copiedKey === 'prompt' ? <Check size={11} className="text-emerald" /> : <Copy size={11} />}
+                <span>
+                  {isZh
+                    ? `复制当前工程 (${activeProjectSlug}) 上下文 Prompt`
+                    : `Copy ${activeProjectSlug} Context Prompt`}
+                </span>
+              </Button>
+            ) : (
+              <span className="text-[11px] text-text-muted">
+                {isZh
+                  ? '所有外部写入操作均会通过 Chokidar 自动热重载到工作台。'
+                  : 'All external writes automatically hot-reload via Chokidar.'}
+              </span>
+            )}
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="segmented-pills" role="tablist">
-              <button
-                id="agent-tab-connect"
-                type="button"
-                className={`segmented-pill ${tab === 'connect' ? 'active' : ''}`}
-                onClick={() => setTab('connect')}
-              >
-                <Plug size={12} style={{ marginRight: 5, verticalAlign: '-2px' }} />
-                一键接入
-              </button>
-              <button
-                id="agent-tab-skill"
-                type="button"
-                className={`segmented-pill ${tab === 'skill' ? 'active' : ''}`}
-                onClick={() => setTab('skill')}
-              >
-                <BookOpen size={12} style={{ marginRight: 5, verticalAlign: '-2px' }} />
-                Skill 规范包
-              </button>
-              <button
-                id="agent-tab-tools"
-                type="button"
-                className={`segmented-pill ${tab === 'tools' ? 'active' : ''}`}
-                onClick={() => setTab('tools')}
-              >
-                <ShieldCheck size={12} style={{ marginRight: 5, verticalAlign: '-2px' }} />
-                工具与护栏
-              </button>
-            </div>
-
-            <button type="button" className="btn btn-sm btn-icon" onClick={onClose}>
-              <X size={14} />
-            </button>
-          </div>
+          <Button size="sm" variant="default" onClick={onClose}>
+            {isZh ? '关闭' : 'Close'}
+          </Button>
         </div>
-
-        {/* Body */}
-        <div className="modal-body">
-          {/* Live MCP Status Strip */}
-          {agentData ? (
-            <div className="agent-hub-status-strip">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      }
+    >
+      <div className="flex flex-col gap-3.5">
+        {/* Live MCP Status Strip */}
+        {agentData ? (
+          <div className="flex flex-wrap items-center justify-between gap-2.5 px-3 py-2 rounded-[8px] bg-elevated/60 border border-border-subtle">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-text-primary">
                 <span
-                  className={`chip ${agentData.info.mcpEnabled ? 'chip-emerald' : ''}`}
-                  style={
-                    !agentData.info.mcpEnabled
-                      ? { background: 'var(--danger-soft)', color: 'var(--danger)' }
-                      : undefined
-                  }
-                >
-                  <span
-                    className="status-dot"
-                    style={{
-                      background: agentData.info.mcpEnabled ? 'var(--emerald)' : 'var(--danger)',
-                    }}
-                  />
+                  className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    agentData.info.mcpEnabled ? 'bg-emerald' : 'bg-danger',
+                  )}
+                />
+                <span>
                   {agentData.info.mcpEnabled ? 'Streamable HTTP MCP 在线' : 'MCP HTTP 已暂停'}
                 </span>
+              </span>
 
-                <div className="agent-hub-endpoint-pill">
-                  <Globe size={12} />
-                  <span>{agentData.info.httpEndpointUrl}</span>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-icon"
-                    style={{ height: 22, width: 22, padding: 0 }}
-                    title="复制 MCP 端点 URL"
-                    onClick={() =>
-                      void copyText(
-                        'endpoint',
-                        agentData.info.httpEndpointUrl,
-                        '已复制 MCP HTTP 端点 URL',
-                      )
-                    }
-                  >
-                    {copiedKey === 'endpoint' ? <Check size={11} /> : <Copy size={11} />}
-                  </button>
-                </div>
-
-                <span className="chip mono">
-                  {agentData.toolsCatalog.length} Tools · {agentData.resourcesCatalog.length} Resources
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="chip chip-cyan mono">
-                  Port {agentData.info.actualPort}
-                  {agentData.info.guardrails.fixedPortEnabled ? ' (固定)' : ' (动态)'}
-                </span>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[5px] bg-code border border-border-subtle font-mono text-[11.5px] text-text-primary">
+                <Globe size={11} className="text-text-muted" />
+                <span>{agentData.info.httpEndpointUrl}</span>
                 <button
                   type="button"
-                  className="btn btn-sm btn-icon"
-                  title="刷新检测状态"
-                  onClick={() => void loadHubData()}
+                  title="复制 MCP 端点 URL"
+                  onClick={() =>
+                    void copyText(
+                      'endpoint',
+                      agentData.info.httpEndpointUrl,
+                      '已复制 MCP HTTP 端点 URL',
+                    )
+                  }
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-[4px] text-text-muted hover:text-text-primary hover:bg-hover cursor-pointer"
                 >
-                  <RefreshCw size={12} />
+                  {copiedKey === 'endpoint' ? <Check size={11} className="text-emerald" /> : <Copy size={11} />}
                 </button>
               </div>
-            </div>
-          ) : null}
 
-          {agentData?.info.portFallbackReason ? (
-            <div className="agent-alert warn">
-              <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-              <span>{agentData.info.portFallbackReason}</span>
+              <span className="font-mono text-[11px] text-text-muted">
+                {agentData.toolsCatalog.length} Tools · {agentData.resourcesCatalog.length} Resources
+              </span>
             </div>
-          ) : null}
 
-          {loading && !agentData ? (
-            <div className="empty-stage" style={{ minHeight: 260 }}>
-              正在检测本机 AI 客户端与 MCP 端点状态...
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[11px] text-text-secondary px-2 py-0.5 rounded-[5px] bg-canvas border border-border-subtle">
+                Port {agentData.info.actualPort}
+                {agentData.info.guardrails.fixedPortEnabled ? ' (固定)' : ' (动态)'}
+              </span>
+              <Button size="xs" variant="ghost" title="刷新检测状态" onClick={() => void loadHubData()}>
+                <RefreshCw size={12} />
+              </Button>
             </div>
-          ) : null}
+          </div>
+        ) : null}
 
-          {/* TAB 1: Client One-Click Connect & Installer */}
-          {tab === 'connect' && agentData && selectedClient ? (
-            <div className="agent-hub-grid">
-              {/* Left: Client List */}
-              <div className="agent-client-list">
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-muted)', paddingLeft: 2 }}>
-                  选择外部 AI 客户端（支持自动检测与安全合并）
-                </div>
-                {agentData.info.clients.map((client) => (
-                  <button
-                    key={client.id}
-                    id={`agent-client-${client.id}`}
-                    type="button"
-                    className={`agent-client-card ${selectedClient.id === client.id ? 'active' : ''}`}
-                    onClick={() => handleSelectClient(client)}
-                  >
-                    <div className="agent-client-card-head">
-                      <span className="agent-client-card-title">{client.name}</span>
-                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                        {client.mcpInstalled ? (
-                          <span className="chip chip-emerald" style={{ fontSize: 10 }}>
-                            MCP ({client.mcpInstalledMode})
-                          </span>
-                        ) : null}
-                        {client.skillInstalled ? (
-                          <span className="chip chip-cyan" style={{ fontSize: 10 }}>
-                            Skill
-                          </span>
-                        ) : null}
-                        {!client.mcpInstalled && !client.skillInstalled && client.clientDetected ? (
-                          <span className="chip" style={{ fontSize: 10 }}>
-                            已检测
-                          </span>
-                        ) : null}
+        {agentData?.info.portFallbackReason ? (
+          <div className="px-3 py-2 rounded-[7px] bg-accent-soft border border-accent/25 text-accent text-[12px] flex items-start gap-2">
+            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+            <span>{agentData.info.portFallbackReason}</span>
+          </div>
+        ) : null}
+
+        {loading && !agentData ? (
+          <div className="py-20 text-center text-[12.5px] text-text-muted">
+            {isZh ? '正在检测本机 AI 客户端与 MCP 端点状态...' : 'Detecting local AI clients & MCP endpoint...'}
+          </div>
+        ) : null}
+
+        {/* TAB 1: Client Connect & Installer */}
+        {tab === 'connect' && agentData && selectedClient ? (
+          <div className="grid grid-cols-[276px_minmax(0,1fr)] gap-3.5 min-h-[410px]">
+            {/* Left: Client Selector List */}
+            <div className="flex flex-col gap-2 min-w-0">
+              <div className="text-[11px] font-medium text-text-muted px-0.5">
+                {isZh ? '选择外部 AI 客户端' : 'Select AI Client'}
+              </div>
+              <div className="border border-border-subtle rounded-[8px] overflow-hidden divide-y divide-border-subtle bg-elevated/35">
+                {agentData.info.clients.map((client) => {
+                  const isActive = selectedClient.id === client.id;
+                  return (
+                    <button
+                      key={client.id}
+                      id={`agent-client-${client.id}`}
+                      type="button"
+                      onClick={() => handleSelectClient(client)}
+                      className={cn(
+                        'relative w-full text-left px-3 py-2.5 flex flex-col gap-1 transition-colors cursor-pointer',
+                        isActive ? 'bg-elevated text-text-primary' : 'hover:bg-hover/60 text-text-secondary',
+                      )}
+                    >
+                      {isActive ? (
+                        <span className="absolute left-0 top-0 bottom-0 w-[2px] bg-accent" />
+                      ) : null}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[12.5px] font-semibold text-text-primary">
+                          {client.name}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {client.mcpInstalled ? (
+                            <span className="font-mono text-[10px] text-emerald px-1.5 py-px rounded-[4px] bg-emerald-soft">
+                              MCP
+                            </span>
+                          ) : null}
+                          {client.skillInstalled ? (
+                            <span className="font-mono text-[10px] text-cyan px-1.5 py-px rounded-[4px] bg-cyan-soft">
+                              Skill
+                            </span>
+                          ) : null}
+                          {!client.mcpInstalled && !client.skillInstalled && client.clientDetected ? (
+                            <span className="font-mono text-[10px] text-text-muted px-1.5 py-px rounded-[4px] bg-canvas border border-border-subtle">
+                              {isZh ? '已检测' : 'Detected'}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                    <div className="agent-client-card-desc">{client.description}</div>
-                  </button>
-                ))}
+                      <div className="text-[11px] text-text-muted leading-snug">
+                        {client.description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right: Client Configuration Workbench */}
+            <div className="rounded-[8px] border border-border-subtle bg-elevated/35 p-3.5 flex flex-col gap-3 min-w-0 overflow-hidden">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <div className="text-[13.5px] font-semibold text-text-primary">
+                    {selectedClient.name}
+                  </div>
+                  <div className="text-[11px] text-text-muted mt-0.5">
+                    {isZh ? '推荐模式：' : 'Recommended: '}
+                    <span className="text-text-secondary font-medium">
+                      {selectedClient.recommendedTransport === 'http'
+                        ? isZh
+                          ? '固定本地 HTTP（实时热更新 + 零进程开销）'
+                          : 'Local HTTP (Live hot-reload)'
+                        : isZh
+                          ? '离线零依赖 stdio（不开软件后台可用）'
+                          : 'Offline stdio'}
+                    </span>
+                  </div>
+                </div>
+
+                <SegmentedTabs
+                  value={transport}
+                  onValueChange={(next) => {
+                    setTransport(next);
+                    setInstallFeedback(null);
+                  }}
+                  size="xs"
+                  items={[
+                    {
+                      value: 'http',
+                      id: 'agent-mode-http',
+                      label: (
+                        <>
+                          <Globe size={11} />
+                          <span>{isZh ? '本地固定 HTTP' : 'HTTP'}</span>
+                        </>
+                      ),
+                    },
+                    {
+                      value: 'stdio',
+                      id: 'agent-mode-stdio',
+                      label: (
+                        <>
+                          <Terminal size={11} />
+                          <span>{isZh ? '离线 stdio' : 'stdio'}</span>
+                        </>
+                      ),
+                    },
+                  ]}
+                />
               </div>
 
-              {/* Right: Client Configuration Workbench */}
-              <div className="agent-workbench">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{selectedClient.name}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                      推荐连接模式：
-                      <strong style={{ color: 'var(--accent)' }}>
-                        {selectedClient.recommendedTransport === 'http'
-                          ? '固定本地 HTTP（实时热更新 + 零进程开销）'
-                          : '离线零依赖 stdio（不开软件后台可用）'}
-                      </strong>
+              <div className="px-3 py-2 rounded-[6px] bg-panel border border-border-subtle text-[11.5px] text-text-secondary leading-relaxed flex items-start gap-2">
+                {transport === 'http' ? (
+                  <>
+                    <Globe size={13} className="text-text-muted shrink-0 mt-0.5" />
+                    <span>
+                      通过 <code className="font-mono text-text-primary">{agentData.info.httpEndpointUrl}</code> 直连当前 CooDance
+                      服务；Agent 调用 TTS、导入素材或渲染时，工作台同步展示实时进度与画布热更新。
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Terminal size={13} className="text-text-muted shrink-0 mt-0.5" />
+                    <span>
+                      运行时：<code className="font-mono text-text-primary">{agentData.info.stdioRuntimeLabel}</code>。即使关闭
+                      CooDance 窗口，外部 Agent 仍可离线读写工作区。
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Target Paths & Install Switches */}
+              {selectedClient.canAutoInstall ? (
+                <div className="rounded-[7px] border border-border-subtle divide-y divide-border-subtle bg-panel overflow-hidden">
+                  {selectedClient.configPath ? (
+                    <div className="px-3 py-2 flex items-center justify-between gap-3">
+                      <div className="min-w-0 text-[11.5px] text-text-secondary leading-snug">
+                        <span className="text-text-primary font-medium">安全合并写入 MCP 配置</span>
+                        <span className="text-text-muted">（写入前自动生成 .bak 备份）</span>
+                        <div className="font-mono text-[10.5px] text-text-muted truncate mt-0.5">
+                          {selectedClient.configPath}
+                        </div>
+                      </div>
+                      <StudioSwitch checked={installMcp} onCheckedChange={setInstallMcp} />
                     </div>
-                  </div>
+                  ) : null}
 
-                  {/* Dual-Mode Transport Toggle */}
-                  <div className="segmented-pills">
-                    <button
-                      id="agent-mode-http"
-                      type="button"
-                      className={`segmented-pill ${transport === 'http' ? 'active' : ''}`}
-                      onClick={() => {
-                        setTransport('http');
-                        setInstallFeedback(null);
-                      }}
-                    >
-                      <Globe size={11} style={{ marginRight: 4, verticalAlign: '-1px' }} />
-                      本地固定 HTTP
-                    </button>
-                    <button
-                      id="agent-mode-stdio"
-                      type="button"
-                      className={`segmented-pill ${transport === 'stdio' ? 'active' : ''}`}
-                      onClick={() => {
-                        setTransport('stdio');
-                        setInstallFeedback(null);
-                      }}
-                    >
-                      <Terminal size={11} style={{ marginRight: 4, verticalAlign: '-1px' }} />
-                      离线零依赖 stdio
-                    </button>
-                  </div>
-                </div>
-
-                {/* Runtime info pill */}
-                <div className="agent-alert info" style={{ padding: '8px 10px' }}>
-                  {transport === 'http' ? (
-                    <>
-                      <Globe size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-                      <span>
-                        通过 <code className="mono">{agentData.info.httpEndpointUrl}</code> 直连当前 CooDance 服务；Agent
-                        调用 TTS、导入素材或渲染时，工作台会同步展示实时进度与画布热更新。
-                      </span>
-                    </>
+                  {selectedClient.skillInstallDir ? (
+                    <div className="px-3 py-2 flex items-center justify-between gap-3">
+                      <div className="min-w-0 text-[11.5px] text-text-secondary leading-snug">
+                        <span className="text-text-primary font-medium">
+                          同步安装 coodance-video-producer Skill
+                        </span>
+                        <div className="font-mono text-[10.5px] text-text-muted truncate mt-0.5">
+                          {selectedClient.skillInstallDir}
+                        </div>
+                      </div>
+                      <StudioSwitch checked={installSkill} onCheckedChange={setInstallSkill} />
+                    </div>
                   ) : (
-                    <>
-                      <Terminal size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-                      <span>
-                        运行时：<code className="mono">{agentData.info.stdioRuntimeLabel}</code>。即使关闭 CooDance
-                        窗口，外部 Agent 仍可离线操作工作区并在下次打开时自动同步。
-                      </span>
-                    </>
+                    <div className="px-3 py-2 text-[11px] text-text-muted">
+                      提示：{selectedClient.name} 无标准全局 Skill 目录，连接 MCP 后可直接读取内置资源{' '}
+                      <code className="font-mono text-text-secondary">coodance://skill/guide</code>。
+                    </div>
                   )}
                 </div>
+              ) : null}
 
-                {/* Target Paths & Install Checkboxes */}
+              {/* Action Bar */}
+              <div className="flex items-center gap-2 flex-wrap">
                 {selectedClient.canAutoInstall ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 7,
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      background: 'var(--bg-panel)',
-                      border: '1px solid var(--border-subtle)',
-                    }}
-                  >
-                    {selectedClient.configPath ? (
-                      <label className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={installMcp}
-                          onChange={(e) => setInstallMcp(e.target.checked)}
-                        />
-                        <span>
-                          安全合并写入 MCP 配置（写入前自动生成 <code className="mono">.bak</code> 备份）：
-                          <code className="mono" style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>
-                            {selectedClient.configPath}
-                          </code>
-                        </span>
-                      </label>
-                    ) : null}
-
-                    {selectedClient.skillInstallDir ? (
-                      <label className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={installSkill}
-                          onChange={(e) => setInstallSkill(e.target.checked)}
-                        />
-                        <span>
-                          同步安装 <code className="mono">coodance-video-producer</code> Skill 到：
-                          <code className="mono" style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>
-                            {selectedClient.skillInstallDir}
-                          </code>
-                        </span>
-                      </label>
-                    ) : (
-                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                        提示：{selectedClient.name} 无标准全局 Skill 目录，但连接 MCP 后可直接按需读取内置资源{' '}
-                        <code className="mono">coodance://skill/guide</code> 获取完整 5 阶段编导规范。
-                      </div>
-                    )}
-                  </div>
-                ) : null}
-
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {selectedClient.canAutoInstall ? (
-                    <>
-                      <button
-                        id="btn-agent-install"
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        disabled={busyInstall || (!installMcp && !installSkill)}
-                        onClick={() => void handleInstallAction(false)}
-                      >
-                        <Plug size={12} />
+                  <>
+                    <Button
+                      id="btn-agent-install"
+                      size="xs"
+                      variant="primary"
+                      disabled={busyInstall || (!installMcp && !installSkill)}
+                      onClick={() => void handleInstallAction(false)}
+                    >
+                      <Plug size={11} />
+                      <span>
                         {busyInstall
                           ? '写入中...'
                           : selectedClient.mcpInstalled || selectedClient.skillInstalled
                             ? '一键更新配置 / Skill'
                             : '一键安全安装'}
-                      </button>
-                      <button
-                        id="btn-agent-preview"
-                        type="button"
-                        className="btn btn-sm"
-                        disabled={busyInstall || (!installMcp && !installSkill)}
-                        onClick={() => void handleInstallAction(true)}
-                      >
-                        <Eye size={12} />
-                        预览合并结果
-                      </button>
-                    </>
-                  ) : null}
-
-                  <button
-                    id="btn-copy-mcp-snippet"
-                    type="button"
-                    className="btn btn-sm"
-                    onClick={() =>
-                      void copyText(
-                        'snippet',
-                        installFeedback?.previewConfigJson || activeSnippet,
-                        `已复制 ${selectedClient.name} (${transport.toUpperCase()}) MCP 配置 JSON`,
-                      )
-                    }
-                  >
-                    {copiedKey === 'snippet' ? <Check size={12} /> : <Copy size={12} />}
-                    {copiedKey === 'snippet' ? '已复制' : '复制 JSON 配置'}
-                  </button>
-
-                  {(selectedClient.mcpInstalled || selectedClient.skillInstalled) &&
-                  selectedClient.canAutoInstall ? (
-                    <button
-                      type="button"
-                      className="btn btn-sm"
-                      style={{ color: 'var(--danger)' }}
-                      disabled={busyInstall}
-                      onClick={() => void handleUninstallAction()}
+                      </span>
+                    </Button>
+                    <Button
+                      id="btn-agent-preview"
+                      size="xs"
+                      variant="default"
+                      disabled={busyInstall || (!installMcp && !installSkill)}
+                      onClick={() => void handleInstallAction(true)}
                     >
-                      <Trash2 size={12} />
-                      安全移除
-                    </button>
-                  ) : null}
-                </div>
-
-                {/* Install / Dry-Run Feedback */}
-                {installFeedback ? (
-                  <div className={`agent-alert ${installFeedback.dryRun ? 'info' : 'success'}`}>
-                    <CheckCircle2 size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-                    <div>
-                      <div>
-                        <strong>{installFeedback.message}</strong>
-                      </div>
-                      {installFeedback.backupPath ? (
-                        <div style={{ fontSize: 11, marginTop: 3 }}>
-                          原配置已备份至：<code className="mono">{installFeedback.backupPath}</code>
-                        </div>
-                      ) : null}
-                      {installFeedback.warnings.map((w, i) => (
-                        <div key={i} style={{ fontSize: 11, marginTop: 3, color: 'var(--accent)' }}>
-                          ⚠ {w}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                      <Eye size={11} />
+                      <span>预览合并结果</span>
+                    </Button>
+                  </>
                 ) : null}
 
-                {/* JSON Config Code Block */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-muted)' }}>
-                    <span>
-                      {installFeedback?.previewConfigJson
-                        ? '合并后的完整配置文件预览'
-                        : `${selectedClient.name} · ${transport.toUpperCase()} MCP 配置片段`}
-                    </span>
-                    <span className="mono">mcpServers.coodance</span>
+                <Button
+                  id="btn-copy-mcp-snippet"
+                  size="xs"
+                  variant="default"
+                  onClick={() =>
+                    void copyText(
+                      'snippet',
+                      installFeedback?.previewConfigJson || activeSnippet,
+                      `已复制 ${selectedClient.name} (${transport.toUpperCase()}) MCP 配置 JSON`,
+                    )
+                  }
+                >
+                  {copiedKey === 'snippet' ? <Check size={11} className="text-emerald" /> : <Copy size={11} />}
+                  <span>{copiedKey === 'snippet' ? '已复制' : '复制 JSON 配置'}</span>
+                </Button>
+
+                {(selectedClient.mcpInstalled || selectedClient.skillInstalled) &&
+                selectedClient.canAutoInstall ? (
+                  <Button
+                    size="xs"
+                    variant="danger"
+                    disabled={busyInstall}
+                    onClick={() => void handleUninstallAction()}
+                  >
+                    <Trash2 size={11} />
+                    <span>安全移除</span>
+                  </Button>
+                ) : null}
+              </div>
+
+              {installFeedback ? (
+                <div
+                  className={cn(
+                    'px-3 py-2 rounded-[7px] border text-[11.5px] flex items-start gap-2',
+                    installFeedback.dryRun
+                      ? 'bg-cyan-soft/50 border-cyan/25 text-cyan'
+                      : 'bg-emerald-soft/50 border-emerald/25 text-emerald',
+                  )}
+                >
+                  <CheckCircle2 size={13} className="shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <div className="font-semibold">{installFeedback.message}</div>
+                    {installFeedback.backupPath ? (
+                      <div className="text-[10.5px] opacity-85 mt-0.5 font-mono truncate">
+                        Backup: {installFeedback.backupPath}
+                      </div>
+                    ) : null}
+                    {installFeedback.warnings.map((w, i) => (
+                      <div key={i} className="text-[10.5px] text-accent mt-0.5">
+                        ⚠ {w}
+                      </div>
+                    ))}
                   </div>
-                  <pre className="agent-code-block">
-                    {installFeedback?.previewConfigJson || activeSnippet}
-                  </pre>
+                </div>
+              ) : null}
+
+              {/* Read-Only CodeMirror 6 JSON Snippet */}
+              <div className="flex flex-col gap-1 flex-1 min-h-[160px]">
+                <div className="flex items-center justify-between text-[11px] text-text-muted">
+                  <span>
+                    {installFeedback?.previewConfigJson
+                      ? '合并后的完整配置文件预览'
+                      : `${selectedClient.name} · ${transport.toUpperCase()} MCP 配置片段`}
+                  </span>
+                  <span className="font-mono">mcpServers.coodance</span>
+                </div>
+                <div className="flex-1 min-h-[150px] max-h-[220px] rounded-[7px] border border-border-subtle overflow-hidden">
+                  <CodeEditor
+                    value={installFeedback?.previewConfigJson || activeSnippet}
+                    language="json"
+                    theme={uiTheme}
+                    readOnly
+                    lineNumbers
+                  />
                 </div>
               </div>
             </div>
-          ) : null}
+          </div>
+        ) : null}
 
-          {/* TAB 2: Skill Bundle Explorer & Download */}
-          {tab === 'skill' && agentData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="agent-hub-status-strip">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <FileCode2 size={15} style={{ color: 'var(--accent)' }} />
-                    <span>coodance-video-producer Skill 创作规范包</span>
-                    <span className="chip chip-accent mono">{skillFiles.length} 个文件</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                    指导外部 Agent 按 5 阶段 SOP 撰写口播、产出 16:9 SVG / AI 图片 / 录屏并通过{' '}
-                    <code className="mono">coodance_import_asset</code> 入库，无 MCP 时自动降级使用本地 CLI。
-                  </div>
+        {/* TAB 2: Skill Bundle Explorer (Read-Only CodeMirror 6 Markdown) */}
+        {tab === 'skill' && agentData ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-[8px] bg-elevated/50 border border-border-subtle">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
+                  <FileCode2 size={14} className="text-accent" />
+                  <span>coodance-video-producer Skill 创作规范包</span>
+                  <span className="font-mono text-[10.5px] text-text-muted">
+                    ({skillFiles.length} files)
+                  </span>
                 </div>
-
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <a
-                    id="btn-download-skill-zip"
-                    href={skillZipDownloadUrl()}
-                    download="coodance-video-producer-skill.zip"
-                    className="btn btn-primary btn-sm"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <Download size={13} />
-                    下载 Skill 压缩包 (.zip)
-                  </a>
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    onClick={() =>
-                      void copyText('skill-file', activeSkillContent, `已复制 ${activeSkillFile}`)
-                    }
-                  >
-                    {copiedKey === 'skill-file' ? <Check size={12} /> : <Copy size={12} />}
-                    复制当前文档
-                  </button>
+                <div className="text-[11.5px] text-text-muted mt-0.5">
+                  指导外部 Agent 按 5 阶段 SOP 撰写口播、产出 16:9 素材并通过{' '}
+                  <code className="font-mono text-text-secondary">coodance_import_asset</code> 入库。
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {skillFiles.map((f) => (
-                  <button
-                    key={f.relativePath}
-                    type="button"
-                    className={`btn btn-sm ${activeSkillFile === f.relativePath ? 'btn-primary' : ''}`}
-                    onClick={() => setActiveSkillFile(f.relativePath)}
-                  >
-                    <span className="mono">{f.relativePath}</span>
-                    <span style={{ opacity: 0.72, fontSize: 10.5 }}>
-                      {(f.sizeBytes / 1024).toFixed(1)} KB
-                    </span>
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  id="btn-download-skill-zip"
+                  href={skillZipDownloadUrl()}
+                  download="coodance-video-producer-skill.zip"
+                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[6px] bg-primary text-primary-ink hover:bg-primary-hover text-[12px] font-semibold no-underline transition-colors"
+                >
+                  <Download size={12} />
+                  <span>下载 Skill (.zip)</span>
+                </a>
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() =>
+                    void copyText('skill-file', activeSkillContent, `已复制 ${activeSkillFile}`)
+                  }
+                >
+                  {copiedKey === 'skill-file' ? <Check size={12} className="text-emerald" /> : <Copy size={12} />}
+                  <span>复制文档</span>
+                </Button>
               </div>
-
-              <pre className="agent-doc-block">{activeSkillContent || '未找到 Skill 文档内容。'}</pre>
             </div>
-          ) : null}
 
-          {/* TAB 3: MCP Tools Catalog & Safety Guardrails */}
-          {tab === 'tools' && agentData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Guardrail Controls */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <ShieldCheck size={14} style={{ color: 'var(--emerald)' }} />
-                    <span>安全与成本护栏配置</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {skillFiles.map((f) => (
+                <Button
+                  key={f.relativePath}
+                  size="xs"
+                  variant={activeSkillFile === f.relativePath ? 'primary' : 'default'}
+                  onClick={() => setActiveSkillFile(f.relativePath)}
+                  className="font-mono"
+                >
+                  <span>{f.relativePath}</span>
+                  <span className="opacity-65 text-[10px]">
+                    {(f.sizeBytes / 1024).toFixed(1)} KB
+                  </span>
+                </Button>
+              ))}
+            </div>
+
+            <div className="h-[360px] rounded-[8px] border border-border-subtle overflow-hidden">
+              <CodeEditor
+                value={activeSkillContent || '未找到 Skill 文档内容。'}
+                language="markdown"
+                theme={uiTheme}
+                readOnly
+                wordWrap
+                lineNumbers
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {/* TAB 3: Guardrails (Linear 1px List) + MCP Tools & Resources Catalog */}
+        {tab === 'tools' && agentData ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-[12.5px] font-semibold text-text-primary">
+                  <ShieldCheck size={13} className="text-emerald" />
+                  <span>安全与成本护栏配置</span>
+                </div>
+                <Button
+                  id="btn-save-mcp-guardrails"
+                  size="xs"
+                  variant="primary"
+                  disabled={savingGuardrails}
+                  onClick={() => void handleSaveGuardrails()}
+                >
+                  {savingGuardrails ? '保存中...' : '保存护栏设置'}
+                </Button>
+              </div>
+
+              <div className="rounded-[8px] border border-border-subtle divide-y divide-border-subtle bg-elevated/35 overflow-hidden">
+                <div className="px-3.5 py-2.5 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-medium text-text-primary">
+                      启用 Streamable HTTP MCP (/mcp)
+                    </div>
+                    <div className="text-[11px] text-text-muted mt-0.5">
+                      关闭后外部 HTTP 客户端将收到 503，不影响本地 CLI。
+                    </div>
                   </div>
-                  <button
-                    id="btn-save-mcp-guardrails"
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    disabled={savingGuardrails}
-                    onClick={() => void handleSaveGuardrails()}
-                  >
-                    {savingGuardrails ? '保存中...' : '保存护栏设置'}
-                  </button>
+                  <StudioSwitch
+                    checked={mcpDraft.enabled}
+                    onCheckedChange={(checked) => setMcpDraft({ ...mcpDraft, enabled: checked })}
+                  />
                 </div>
 
-                <div className="agent-guardrail-grid">
-                  <div className="agent-guardrail-item">
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700 }}>启用 Streamable HTTP MCP (/mcp)</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2 }}>
-                        关闭后外部 HTTP 客户端将收到 503，不影响本地 CLI。
-                      </div>
+                <div className="px-3.5 py-2.5 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-medium text-text-primary">
+                      桌面端固定本地 MCP 端口
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={mcpDraft.enabled}
-                      onChange={(e) => setMcpDraft({ ...mcpDraft, enabled: e.target.checked })}
-                      style={{ accentColor: 'var(--accent)', width: 16, height: 16 }}
-                    />
+                    <div className="text-[11px] text-text-muted mt-0.5">
+                      重启桌面端生效；端口冲突时自动回退随机端口并提示。
+                    </div>
                   </div>
-
-                  <div className="agent-guardrail-item">
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700 }}>桌面端固定本地 MCP 端口</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2 }}>
-                        重启桌面端生效；端口冲突时自动回退随机端口并提示。
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input
-                        type="number"
-                        className="input mono"
-                        style={{ width: 76, height: 28, padding: '2px 8px' }}
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="w-[96px]">
+                      <NumberScrubInput
+                        compact
+                        prefix=":"
                         min={1024}
                         max={65535}
+                        step={1}
                         disabled={!mcpDraft.fixedPortEnabled}
                         value={mcpDraft.fixedPort}
-                        onChange={(e) =>
-                          setMcpDraft({ ...mcpDraft, fixedPort: Number(e.target.value) || 4170 })
+                        onValueChange={(val) =>
+                          setMcpDraft({ ...mcpDraft, fixedPort: Math.round(val) || 4170 })
                         }
                       />
-                      <input
-                        type="checkbox"
-                        checked={mcpDraft.fixedPortEnabled}
-                        onChange={(e) =>
-                          setMcpDraft({ ...mcpDraft, fixedPortEnabled: e.target.checked })
-                        }
-                        style={{ accentColor: 'var(--accent)', width: 16, height: 16 }}
-                      />
                     </div>
-                  </div>
-
-                  <div className="agent-guardrail-item">
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700 }}>Agent 写入前自动打 Git 快照</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2 }}>
-                        覆盖 script.txt / edit_plan.json 或渲染前自动存档，随时一键回退。
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={mcpDraft.autoSnapshotOnAgentWrite}
-                      onChange={(e) =>
-                        setMcpDraft({ ...mcpDraft, autoSnapshotOnAgentWrite: e.target.checked })
+                    <StudioSwitch
+                      checked={mcpDraft.fixedPortEnabled}
+                      onCheckedChange={(checked) =>
+                        setMcpDraft({ ...mcpDraft, fixedPortEnabled: checked })
                       }
-                      style={{ accentColor: 'var(--accent)', width: 16, height: 16 }}
-                    />
-                  </div>
-
-                  <div className="agent-guardrail-item">
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700 }}>允许 Agent 触发付费豆包 TTS</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2 }}>
-                        默认关闭以防外部 Agent 误扣费（关闭时自动引导使用免费 Edge-TTS / 本地离线）。
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={mcpDraft.allowPaidTtsFromAgent}
-                      onChange={(e) =>
-                        setMcpDraft({ ...mcpDraft, allowPaidTtsFromAgent: e.target.checked })
-                      }
-                      style={{ accentColor: 'var(--accent)', width: 16, height: 16 }}
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* 11 MCP Tools Grid */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Wrench size={14} style={{ color: 'var(--cyan)' }} />
-                  <span>已注册 MCP 工具（{agentData.toolsCatalog.length} 个高内聚工具）</span>
-                </div>
-                <div className="agent-tools-grid">
-                  {agentData.toolsCatalog.map((tool) => (
-                    <div key={tool.name} className="agent-tool-card">
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                        <code className="mono" style={{ fontSize: 12, color: 'var(--cyan)', fontWeight: 700 }}>
-                          {tool.name}
-                        </code>
-                        <span className="chip" style={{ fontSize: 10 }}>
-                          {STAGE_LABEL[tool.stage] || tool.stage}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{tool.title}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                        {tool.description}
-                      </div>
-                      {tool.guardrail ? (
-                        <div style={{ fontSize: 11, color: 'var(--emerald)', marginTop: 2 }}>
-                          🛡 {tool.guardrail}
-                        </div>
-                      ) : null}
+                <div className="px-3.5 py-2.5 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-medium text-text-primary">
+                      Agent 写入前自动打 Git 快照
                     </div>
-                  ))}
+                    <div className="text-[11px] text-text-muted mt-0.5">
+                      覆盖 script.txt / edit_plan.json 或渲染前自动存档，随时一键回退。
+                    </div>
+                  </div>
+                  <StudioSwitch
+                    checked={mcpDraft.autoSnapshotOnAgentWrite}
+                    onCheckedChange={(checked) =>
+                      setMcpDraft({ ...mcpDraft, autoSnapshotOnAgentWrite: checked })
+                    }
+                  />
                 </div>
-              </div>
 
-              {/* 4 MCP Resources */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-secondary)' }}>
-                  渐进式 MCP Resources（按需读取，零常驻 Token 负担）
-                </div>
-                <div className="agent-tools-grid">
-                  {agentData.resourcesCatalog.map((res) => (
-                    <div key={res.uri} className="agent-tool-card">
-                      <code className="mono" style={{ fontSize: 11.5, color: 'var(--accent)' }}>
-                        {res.uri}
-                      </code>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{res.name}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{res.description}</div>
+                <div className="px-3.5 py-2.5 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-medium text-text-primary">
+                      允许 Agent 触发付费豆包 TTS
                     </div>
-                  ))}
+                    <div className="text-[11px] text-text-muted mt-0.5">
+                      默认关闭以防外部 Agent 误扣费（关闭时自动引导使用免费 Edge-TTS / 本地离线）。
+                    </div>
+                  </div>
+                  <StudioSwitch
+                    checked={mcpDraft.allowPaidTtsFromAgent}
+                    onCheckedChange={(checked) =>
+                      setMcpDraft({ ...mcpDraft, allowPaidTtsFromAgent: checked })
+                    }
+                  />
                 </div>
               </div>
             </div>
-          ) : null}
-        </div>
 
-        {/* Footer */}
-        <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {activeProjectSlug ? (
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={() => void handleCopyProjectPrompt()}
-              >
-                {copiedKey === 'prompt' ? <Check size={12} /> : <Copy size={12} />}
-                零配置兜底：复制当前工程 ({activeProjectSlug}) 上下文 Prompt
-              </button>
-            ) : (
-              <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-                所有外部写入操作均会通过 Chokidar 自动热重载到工作台。
-              </span>
-            )}
+            {/* 11 MCP Tools */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-[12.5px] font-semibold text-text-primary">
+                <Wrench size={13} className="text-text-muted" />
+                <span>已注册 MCP 工具（{agentData.toolsCatalog.length} 个高内聚工具）</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {agentData.toolsCatalog.map((tool) => (
+                  <div
+                    key={tool.name}
+                    className="p-2.5 rounded-[7px] bg-elevated/45 border border-border-subtle flex flex-col gap-1 min-w-0"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <code className="font-mono text-[11.5px] font-semibold text-text-primary truncate">
+                        {tool.name}
+                      </code>
+                      <span className="font-mono text-[10px] text-text-muted px-1.5 py-px rounded-[4px] bg-canvas border border-border-subtle shrink-0">
+                        {STAGE_LABEL[tool.stage] || tool.stage}
+                      </span>
+                    </div>
+                    <div className="text-[11.5px] font-medium text-text-secondary">{tool.title}</div>
+                    <div className="text-[11px] text-text-muted leading-snug">{tool.description}</div>
+                    {tool.guardrail ? (
+                      <div className="text-[10.5px] text-emerald mt-0.5">🛡 {tool.guardrail}</div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 4 MCP Resources */}
+            <div className="flex flex-col gap-2">
+              <div className="text-[12px] font-semibold text-text-secondary">
+                渐进式 MCP Resources（按需读取，零常驻 Token 负担）
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {agentData.resourcesCatalog.map((res) => (
+                  <div
+                    key={res.uri}
+                    className="p-2.5 rounded-[7px] bg-elevated/45 border border-border-subtle flex flex-col gap-1"
+                  >
+                    <code className="font-mono text-[11px] text-accent">{res.uri}</code>
+                    <div className="text-[11.5px] font-medium text-text-primary">{res.name}</div>
+                    <div className="text-[11px] text-text-muted leading-snug">{res.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <button type="button" className="btn" onClick={onClose}>
-            关闭
-          </button>
-        </div>
+        ) : null}
       </div>
-    </div>
+    </StudioDialog>
   );
 };

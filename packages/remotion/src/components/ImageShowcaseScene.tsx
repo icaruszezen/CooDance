@@ -46,7 +46,7 @@ export const ImageShowcaseScene: React.FC<ImageShowcaseSceneProps> = ({
       style={{
         width: '100%',
         height: '100%',
-        padding: showFrame ? '58px 110px 168px' : '0',
+        padding: showFrame ? '56px 104px 164px' : '0',
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
@@ -59,11 +59,15 @@ export const ImageShowcaseScene: React.FC<ImageShowcaseSceneProps> = ({
         style={{
           width: '100%',
           height: '100%',
-          borderRadius: showFrame ? 24 : 0,
+          borderRadius: showFrame ? 14 : 0,
           overflow: 'hidden',
-          border: showFrame ? `1px solid ${theme.border}` : 'none',
+          border: showFrame ? `1px solid ${theme.borderStrong}` : 'none',
           background: theme.surface,
-          boxShadow: showFrame ? '0 28px 72px rgba(0,0,0,0.38)' : 'none',
+          boxShadow: showFrame
+            ? theme.isLight
+              ? '0 20px 48px rgba(20,20,22,0.08)'
+              : '0 24px 64px rgba(0,0,0,0.4)'
+            : 'none',
           position: 'relative',
           opacity: entrance,
         }}
@@ -98,14 +102,14 @@ export const ImageShowcaseScene: React.FC<ImageShowcaseSceneProps> = ({
           <div
             style={{
               position: 'absolute',
-              left: 28,
+              left: 24,
               bottom: 24,
-              padding: '10px 20px',
-              borderRadius: 12,
+              padding: '9px 18px',
+              borderRadius: 10,
               background: theme.subtitleBg,
-              border: `1px solid ${theme.border}`,
+              border: '1px solid rgba(255,255,255,0.12)',
               color: theme.subtitleText,
-              fontSize: 22,
+              fontSize: 21,
               fontWeight: 600,
             }}
           >

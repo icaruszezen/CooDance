@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Group, Panel } from 'react-resizable-panels';
 import {
   Clapperboard,
   GitBranch,
@@ -18,9 +19,20 @@ import {
   projectFileUrl,
 } from '../api';
 import { UiLang, t } from '../i18n';
+import {
+  Button,
+  CodeEditor,
+  FieldLabel,
+  NumberScrubInput,
+  ResizeHandle,
+  StudioInput,
+  StudioSwitch,
+  cn,
+} from './ui';
 
 interface RenderSnapshotsViewProps {
   lang: UiLang;
+  uiTheme: 'dark' | 'light';
   workspace: ProjectWorkspaceDto;
   renderLogs: ProgressEventDto[];
   onRefresh: () => Promise<void>;
@@ -29,6 +41,7 @@ interface RenderSnapshotsViewProps {
 
 export const RenderSnapshotsView: React.FC<RenderSnapshotsViewProps> = ({
   lang,
+  uiTheme,
   workspace,
   renderLogs,
   onRefresh,
@@ -50,6 +63,36 @@ export const RenderSnapshotsView: React.FC<RenderSnapshotsViewProps> = ({
     patch: string;
     files: string[];
   } | null>(null);
+
+  const isZh = lang === 'zh-CN';
+
+  const handleInspectTag = useCallback(
+    async (tag: string, silent = false) => {
+      setSelectedTag(tag);
+      try {
+        const diff = await apiRequest<{ stat: string; patch: string; files: string[] }>(
+          `/api/projects/${encodeURIComponent(workspace.summary.slug)}/snapshots/${encodeURIComponent(tag)}/diff`,
+        );
+        setDiffData(diff);
+      } catch (err) {
+        if (!silent) {
+          onNotify(err instanceof Error ? err.message : String(err), 'error');
+        }
+      }
+    },
+    [workspace.summary.slug, onNotify],
+  );
+
+  // Automatically load the latest snapshot diff when opening view or switching projects
+  useEffect(() => {
+    const firstTag = workspace.snapshots[0]?.tag || null;
+    if (firstTag) {
+      void handleInspectTag(firstTag, true);
+    } else {
+      setSelectedTag(null);
+      setDiffData(null);
+    }
+  }, [workspace.summary.slug, workspace.snapshots[0]?.tag, handleInspectTag]);
 
   const handleRender = async () => {
     setRendering(true);
@@ -89,24 +132,12 @@ export const RenderSnapshotsView: React.FC<RenderSnapshotsViewProps> = ({
       );
       setSnapNote('');
       await onRefresh();
-      setSelectedTag(res.snapshot.tag);
+      await handleInspectTag(res.snapshot.tag, true);
       onNotify(`✔ 已打时间戳快照: ${res.snapshot.tag}`, 'success');
     } catch (err) {
       onNotify(err instanceof Error ? err.message : String(err), 'error');
     } finally {
       setBusySnap(false);
-    }
-  };
-
-  const handleInspectTag = async (tag: string) => {
-    setSelectedTag(tag);
-    try {
-      const diff = await apiRequest<{ stat: string; patch: string; files: string[] }>(
-        `/api/projects/${encodeURIComponent(workspace.summary.slug)}/snapshots/${encodeURIComponent(tag)}/diff`,
-      );
-      setDiffData(diff);
-    } catch (err) {
-      onNotify(err instanceof Error ? err.message : String(err), 'error');
     }
   };
 
@@ -140,343 +171,416 @@ export const RenderSnapshotsView: React.FC<RenderSnapshotsViewProps> = ({
   const latestRender = workspace.renders[0];
 
   return (
-    <div className="split-two-col">
-      {/* Left: Stage 5 Production / Draft Render Engine */}
-      <section className="panel-card">
-        <div className="panel-header">
-          <h2 className="panel-title">
-            <Clapperboard size={15} style={{ color: 'var(--accent)' }} />
-            {lang === 'zh-CN' ? 'H.264 成片渲染导出 (Remotion)' : 'H.264 MP4 Renderer (Remotion)'}
-          </h2>
-          <button
-            id="btn-render-mp4"
-            type="button"
-            className="btn btn-sm btn-primary"
-            disabled={rendering}
-            onClick={() => void handleRender()}
-          >
-            {rendering ? <RefreshCw size={13} /> : <Clapperboard size={13} />}
-            {rendering ? (lang === 'zh-CN' ? '渲染中...' : 'Rendering...') : t(lang, 'renderNow')}
-          </button>
-        </div>
-
-        <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Render Preset Selector */}
-          <div className="form-grid-2">
-            <button
-              type="button"
-              onClick={() => {
-                setPreset('production');
-                setCrf(18);
-              }}
-              style={{
-                textAlign: 'left',
-                padding: '12px 14px',
-                borderRadius: 10,
-                border: `1.5px solid ${preset === 'production' ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                background: preset === 'production' ? 'var(--accent-soft)' : 'var(--bg-elevated)',
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ fontWeight: 800, fontSize: 13 }}>成品交付模式 (Production)</div>
-              <div className="mono" style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 4 }}>
-                1920×1080 · 60fps · H.264 yuv420p
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setPreset('draft');
-                setCrf(24);
-              }}
-              style={{
-                textAlign: 'left',
-                padding: '12px 14px',
-                borderRadius: 10,
-                border: `1.5px solid ${preset === 'draft' ? 'var(--cyan)' : 'var(--border-subtle)'}`,
-                background: preset === 'draft' ? 'var(--cyan-soft)' : 'var(--bg-elevated)',
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ fontWeight: 800, fontSize: 13 }}>快速草稿模式 (Draft)</div>
-              <div className="mono" style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 4 }}>
-                1280×720 · 30fps · 极速审片验证
-              </div>
-            </button>
-          </div>
-
-          <div className="form-grid-2">
-            <div>
-              <label className="field-label">自定义输出文件名（留空自动命名）</label>
-              <input
-                className="input mono"
-                placeholder={`${workspace.summary.slug}-${preset === 'draft' ? 'draft-720p' : '1080p60'}.mp4`}
-                value={outputName}
-                onChange={(e) => setOutputName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="field-label">画质 CRF ({crf}，越小越清晰)</label>
-              <input
-                type="number"
-                className="input mono"
-                min={14}
-                max={30}
-                value={crf}
-                onChange={(e) => setCrf(Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-            <input
-              type="checkbox"
-              checked={autoSnapshot}
-              onChange={(e) => setAutoSnapshot(e.target.checked)}
-            />
-            渲染导出前自动打 Git 时间戳快照（保障每次出片版本可精确溯源）
-          </label>
-
-          {/* Latest Rendered MP4 Player */}
-          {latestRender ? (
-            <div
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <CheckCircle2 size={14} style={{ color: 'var(--emerald)' }} />
-                    {latestRender.name}
-                  </div>
-                  <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    {(latestRender.sizeBytes / 1024 / 1024).toFixed(2)} MB · {new Date(latestRender.modifiedAt).toLocaleString()}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {window.coodanceDesktop?.isDesktop ? (
-                    <button
-                      type="button"
-                      className="btn btn-sm"
-                      onClick={() =>
-                        void window.coodanceDesktop?.revealPath(
-                          `${workspace.summary.path}/${latestRender.relativePath}`,
-                        )
-                      }
-                    >
-                      <FolderOpen size={12} /> 定位文件
-                    </button>
-                  ) : null}
-                  <a
-                    className="btn btn-sm btn-primary"
-                    href={projectFileUrl(workspace.summary.slug, latestRender.relativePath, true)}
-                    download
-                  >
-                    <Download size={12} /> 下载 MP4
-                  </a>
-                </div>
-              </div>
-
-              <video
-                controls
-                preload="metadata"
-                style={{ width: '100%', borderRadius: 8, background: '#000', maxHeight: 240 }}
-                src={projectFileUrl(workspace.summary.slug, latestRender.relativePath)}
-              />
-            </div>
-          ) : null}
-
-          {/* All Rendered Outputs List */}
-          {workspace.renders.length > 1 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span className="field-label">历史渲染产物 (out/)</span>
-              {workspace.renders.slice(1).map((r) => (
-                <div
-                  key={r.name}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '7px 10px',
-                    borderRadius: 7,
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <span className="mono" style={{ fontSize: 11.5 }}>{r.name}</span>
-                  <a
-                    className="btn btn-sm"
-                    href={projectFileUrl(workspace.summary.slug, r.relativePath, true)}
-                    download
-                  >
-                    <Download size={11} /> {(r.sizeBytes / 1024 / 1024).toFixed(1)} MB
-                  </a>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {/* Live Render Console Stream */}
-          {renderLogs.length > 0 ? (
-            <div>
-              <span className="field-label">实时管线日志</span>
-              <pre className="diff-pre" style={{ maxHeight: 150 }}>
-                {renderLogs
-                  .slice(-14)
-                  .map(
-                    (l) =>
-                      `[${new Date(l.timestamp).toLocaleTimeString()}] [${Math.round(l.progress * 100)}%] ${l.message}`,
-                  )
-                  .join('\n')}
-              </pre>
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      {/* Right: Per-Project Git Snapshots & Single-File / Full Rollback */}
-      <section className="panel-card">
-        <div className="panel-header">
-          <h2 className="panel-title">
-            <GitBranch size={15} style={{ color: 'var(--emerald)' }} />
-            Git 时间戳快照 ({workspace.snapshots.length})
-          </h2>
-          <span className="chip mono">SNAPSHOTS.md</span>
-        </div>
-
-        <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Manual Snapshot Bar */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              className="input"
-              placeholder="输入本次改动备注（例如：优化第 3 镜缩放与字幕）..."
-              value={snapNote}
-              onChange={(e) => setSnapNote(e.target.value)}
-            />
-            <button
-              id="btn-create-snapshot"
-              type="button"
-              className="btn btn-primary"
-              disabled={busySnap}
-              onClick={() => void handleCreateSnapshot()}
-            >
-              <Tag size={13} />
-              打快照
-            </button>
-          </div>
-
-          {/* Snapshot Timeline List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 230, overflowY: 'auto' }}>
-            {workspace.snapshots.map((snap) => {
-              const isSelected = selectedTag === snap.tag;
-              return (
-                <div
-                  key={snap.tag}
-                  style={{
-                    padding: '9px 11px',
-                    borderRadius: 9,
-                    background: isSelected ? 'var(--bg-hover)' : 'var(--bg-elevated)',
-                    border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 10,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => void handleInspectTag(snap.tag)}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <History size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                      <span className="mono" style={{ fontWeight: 700, fontSize: 12 }}>
-                        {snap.tag}
-                      </span>
-                      <span className="chip mono">{snap.commit}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
-                      {snap.message}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    disabled={busySnap}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void handleRestore(snap.tag);
-                    }}
-                  >
-                    <RotateCcw size={11} />
-                    整库回退
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Diff & Single-File Precision Rollback Panel */}
-          {selectedTag && diffData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--border-subtle)', paddingTop: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span className="field-label" style={{ margin: 0 }}>
-                  快照 <span className="mono">{selectedTag}</span> 单文件精准恢复：
+    <div className="flex-1 min-h-0 w-full flex overflow-hidden bg-canvas">
+      <Group orientation="horizontal" className="flex-1 min-h-0">
+        {/* Left: H.264 MP4 Renderer */}
+        <Panel defaultSize="50%" minSize="36%">
+          <section className="h-full w-full flex flex-col bg-panel overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-3.5 h-10 border-b border-border-subtle shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Clapperboard size={14} className="text-text-muted shrink-0" />
+                <span className="text-[12.5px] font-semibold text-text-primary truncate">
+                  {isZh ? 'H.264 成片渲染导出 (Remotion)' : 'H.264 MP4 Renderer (Remotion)'}
                 </span>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {(() => {
-                  const priority: Record<string, number> = {
-                    'edit_plan.json': 0,
-                    'script.txt': 1,
-                    'build/audio_timeline.json': 2,
-                    'build/subtitles.srt': 3,
-                    'build/assets_manifest.json': 4,
-                    'project.json': 5,
-                  };
-                  return diffData.files
-                    .filter((f) => f !== 'SNAPSHOTS.md' && f !== '.gitignore')
-                    .slice()
-                    .sort((a, b) => (priority[a] ?? 100) - (priority[b] ?? 100) || a.localeCompare(b))
-                    .slice(0, 12)
-                    .map((file) => (
-                      <button
-                        key={file}
-                        type="button"
-                        className={`btn btn-sm ${file === 'edit_plan.json' || file === 'script.txt' ? 'btn-cyan' : ''}`}
-                        disabled={busySnap}
-                        onClick={() => void handleRestore(selectedTag, file)}
-                      >
-                        <FileCode2 size={11} />
-                        恢复 {file}
-                      </button>
-                    ));
-                })()}
+              <Button
+                id="btn-render-mp4"
+                size="xs"
+                variant="primary"
+                disabled={rendering}
+                onClick={() => void handleRender()}
+              >
+                {rendering ? <RefreshCw size={12} className="spin-icon" /> : <Clapperboard size={12} />}
+                <span>
+                  {rendering ? (isZh ? '渲染中...' : 'Rendering...') : t(lang, 'renderNow')}
+                </span>
+              </Button>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3.5 flex flex-col gap-4">
+              {/* Preset Selector Cards (1px Satin Gold Active State) */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreset('production');
+                    setCrf(18);
+                  }}
+                  className={cn(
+                    'text-left px-3.5 py-2.5 rounded-[8px] border transition-colors cursor-pointer',
+                    preset === 'production'
+                      ? 'border-accent bg-accent-soft/70 text-text-primary'
+                      : 'border-border-subtle bg-elevated/50 text-text-secondary hover:border-border-strong',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12.5px] font-semibold text-text-primary">
+                      {isZh ? '成品交付模式 (Production)' : 'Production Delivery'}
+                    </span>
+                    <span
+                      className={cn(
+                        'w-2 h-2 rounded-full shrink-0',
+                        preset === 'production' ? 'bg-accent' : 'bg-border-strong',
+                      )}
+                    />
+                  </div>
+                  <div className="font-mono text-[11px] text-text-muted mt-1">
+                    1920×1080 · 60fps · H.264 yuv420p
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreset('draft');
+                    setCrf(24);
+                  }}
+                  className={cn(
+                    'text-left px-3.5 py-2.5 rounded-[8px] border transition-colors cursor-pointer',
+                    preset === 'draft'
+                      ? 'border-accent bg-accent-soft/70 text-text-primary'
+                      : 'border-border-subtle bg-elevated/50 text-text-secondary hover:border-border-strong',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12.5px] font-semibold text-text-primary">
+                      {isZh ? '快速草稿模式 (Draft)' : 'Fast Draft Preview'}
+                    </span>
+                    <span
+                      className={cn(
+                        'w-2 h-2 rounded-full shrink-0',
+                        preset === 'draft' ? 'bg-accent' : 'bg-border-strong',
+                      )}
+                    />
+                  </div>
+                  <div className="font-mono text-[11px] text-text-muted mt-1">
+                    1280×720 · 30fps · {isZh ? '极速审片验证' : 'Fast review'}
+                  </div>
+                </button>
               </div>
 
-              <div>
-                <span className="field-label">与当前工作区差异 (git diff {selectedTag})</span>
-                <pre className="diff-pre">
-                  {diffData.patch || '当前工作区与该快照完全一致，无未提交差异。'}
-                </pre>
+              <div className="grid grid-cols-[minmax(0,1fr)_140px] gap-3">
+                <div>
+                  <FieldLabel>
+                    {isZh ? '自定义输出文件名（留空自动命名）' : 'Output Filename (Optional)'}
+                  </FieldLabel>
+                  <StudioInput
+                    compact
+                    mono
+                    placeholder={`${workspace.summary.slug}-${preset === 'draft' ? 'draft-720p' : '1080p60'}.mp4`}
+                    value={outputName}
+                    onChange={(e) => setOutputName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <FieldLabel hint={isZh ? '越小越清' : 'Lower=HQ'}>
+                    {isZh ? '画质 CRF' : 'CRF'}
+                  </FieldLabel>
+                  <NumberScrubInput
+                    compact
+                    prefix="CRF"
+                    min={14}
+                    max={30}
+                    step={1}
+                    value={crf}
+                    onValueChange={(v) => setCrf(Math.round(v))}
+                  />
+                </div>
               </div>
+
+              <div className="flex items-center justify-between gap-3 py-2 border-y border-border-subtle">
+                <span className="text-[12px] text-text-secondary">
+                  {isZh
+                    ? '渲染导出前自动打 Git 时间戳快照（保障每次出片版本可精确溯源）'
+                    : 'Auto-create Git timestamp snapshot before exporting MP4'}
+                </span>
+                <StudioSwitch checked={autoSnapshot} onCheckedChange={setAutoSnapshot} />
+              </div>
+
+              {/* Latest Rendered MP4 Player */}
+              {latestRender ? (
+                <div className="rounded-[8px] border border-border-subtle bg-elevated/45 p-3 flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-text-primary truncate">
+                        <CheckCircle2 size={13} className="text-emerald shrink-0" />
+                        <span className="truncate font-mono">{latestRender.name}</span>
+                      </div>
+                      <div className="font-mono text-[10.5px] text-text-muted mt-0.5 tabular-nums">
+                        {(latestRender.sizeBytes / 1024 / 1024).toFixed(2)} MB ·{' '}
+                        {new Date(latestRender.modifiedAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {window.coodanceDesktop?.isDesktop ? (
+                        <Button
+                          size="xs"
+                          variant="default"
+                          onClick={() =>
+                            void window.coodanceDesktop?.revealPath(
+                              `${workspace.summary.path}/${latestRender.relativePath}`,
+                            )
+                          }
+                        >
+                          <FolderOpen size={11} />
+                          <span>{isZh ? '定位' : 'Reveal'}</span>
+                        </Button>
+                      ) : null}
+                      <a
+                        href={projectFileUrl(workspace.summary.slug, latestRender.relativePath, true)}
+                        download
+                        className="inline-flex items-center gap-1 h-6 px-2.5 rounded-[5px] bg-primary text-primary-ink hover:bg-primary-hover text-[11px] font-semibold no-underline transition-colors"
+                      >
+                        <Download size={11} />
+                        <span>{isZh ? '下载 MP4' : 'Download'}</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <video
+                    controls
+                    preload="metadata"
+                    className="w-full rounded-[6px] bg-black border border-border-subtle max-h-[250px]"
+                    src={projectFileUrl(workspace.summary.slug, latestRender.relativePath)}
+                  />
+                </div>
+              ) : null}
+
+              {/* Historical Renders */}
+              {workspace.renders.length > 1 ? (
+                <div className="flex flex-col gap-1.5">
+                  <FieldLabel className="mb-0.5">
+                    {isZh ? '历史渲染产物 (out/)' : 'Previous Renders (out/)'}
+                  </FieldLabel>
+                  <div className="border border-border-subtle rounded-[8px] overflow-hidden divide-y divide-border-subtle bg-elevated/40">
+                    {workspace.renders.slice(1).map((r) => (
+                      <div
+                        key={r.name}
+                        className="flex items-center justify-between gap-2 px-3 py-2"
+                      >
+                        <span className="font-mono text-[11.5px] text-text-secondary truncate">
+                          {r.name}
+                        </span>
+                        <a
+                          href={projectFileUrl(workspace.summary.slug, r.relativePath, true)}
+                          download
+                          className="inline-flex items-center gap-1 h-6 px-2 rounded-[5px] bg-elevated border border-border-subtle hover:bg-hover text-[11px] font-mono text-text-primary no-underline shrink-0"
+                        >
+                          <Download size={10} />
+                          {(r.sizeBytes / 1024 / 1024).toFixed(1)} MB
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Live Render Logs */}
+              {renderLogs.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  <FieldLabel className="mb-0">{isZh ? '实时管线日志' : 'Pipeline Logs'}</FieldLabel>
+                  <pre className="m-0 p-2.5 rounded-[6px] bg-code border border-border-subtle font-mono text-[11px] leading-relaxed text-text-secondary overflow-auto max-h-[140px]">
+                    {renderLogs
+                      .slice(-14)
+                      .map(
+                        (l) =>
+                          `[${new Date(l.timestamp).toLocaleTimeString()}] [${Math.round(l.progress * 100)}%] ${l.message}`,
+                      )
+                      .join('\n')}
+                  </pre>
+                </div>
+              ) : null}
             </div>
-          ) : (
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              点击任意历史快照，即可查看与当前工作区的 Git Diff 并执行单文件精准回退。
+          </section>
+        </Panel>
+
+        <ResizeHandle />
+
+        {/* Right: Git Snapshots + CodeMirror 6 Diff View */}
+        <Panel minSize="36%">
+          <section className="h-full w-full flex flex-col bg-panel overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-3.5 h-10 border-b border-border-subtle shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <GitBranch size={14} className="text-text-muted shrink-0" />
+                <span className="text-[12.5px] font-semibold text-text-primary">
+                  {isZh ? 'Git 时间戳快照' : 'Git Snapshots'}
+                </span>
+                <span className="font-mono text-[11px] text-text-muted">
+                  ({workspace.snapshots.length})
+                </span>
+              </div>
+              <span className="font-mono text-[10.5px] text-text-muted px-1.5 py-0.5 rounded-[4px] bg-elevated border border-border-subtle">
+                SNAPSHOTS.md
+              </span>
             </div>
-          )}
-        </div>
-      </section>
+
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-4 py-3.5 gap-3">
+              {/* Manual Snapshot Bar */}
+              <div className="flex gap-2 shrink-0">
+                <StudioInput
+                  compact
+                  placeholder={
+                    isZh
+                      ? '输入本次改动备注（例如：优化第 3 镜缩放与字幕）...'
+                      : 'Snapshot note (e.g. Refine scene 3 zoom & subtitles)...'
+                  }
+                  value={snapNote}
+                  onChange={(e) => setSnapNote(e.target.value)}
+                />
+                <Button
+                  id="btn-create-snapshot"
+                  size="sm"
+                  variant="primary"
+                  disabled={busySnap}
+                  onClick={() => void handleCreateSnapshot()}
+                >
+                  <Tag size={12} />
+                  <span>{isZh ? '打快照' : 'Snapshot'}</span>
+                </Button>
+              </div>
+
+              {/* Flat Snapshot List with 2px Satin Gold Active Indicator */}
+              <div className="border border-border-subtle rounded-[8px] overflow-y-auto max-h-[208px] divide-y divide-border-subtle bg-elevated/35 shrink-0">
+                {workspace.snapshots.map((snap) => {
+                  const isSelected = selectedTag === snap.tag;
+                  return (
+                    <div
+                      key={snap.tag}
+                      onClick={() => void handleInspectTag(snap.tag)}
+                      className={cn(
+                        'relative px-3 py-2 flex items-center justify-between gap-2.5 cursor-pointer transition-colors',
+                        isSelected ? 'bg-elevated' : 'hover:bg-hover/65',
+                      )}
+                    >
+                      {isSelected ? (
+                        <span className="absolute left-0 top-0 bottom-0 w-[2px] bg-accent" />
+                      ) : null}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <History
+                            size={11}
+                            className={cn(
+                              'shrink-0',
+                              isSelected ? 'text-accent' : 'text-text-muted',
+                            )}
+                          />
+                          <span className="font-mono text-[11.5px] font-semibold text-text-primary truncate">
+                            {snap.tag}
+                          </span>
+                          <span className="font-mono text-[10px] text-text-muted px-1 py-px rounded-[3px] bg-canvas border border-border-subtle shrink-0">
+                            {snap.commit}
+                          </span>
+                        </div>
+                        <div className="text-[11.5px] text-text-secondary truncate mt-0.5 pl-[19px]">
+                          {snap.message}
+                        </div>
+                      </div>
+
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        disabled={busySnap}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleRestore(snap.tag);
+                        }}
+                      >
+                        <RotateCcw size={11} />
+                        <span>{isZh ? '整库回退' : 'Restore'}</span>
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Diff & Single-File Precision Rollback */}
+              {selectedTag && diffData ? (
+                <div className="flex-1 min-h-0 flex flex-col gap-2.5 pt-2.5 border-t border-border-subtle overflow-hidden">
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <div className="flex items-center justify-between text-[11.5px] text-text-secondary">
+                      <span>
+                        {isZh ? '快照 ' : 'Snapshot '}
+                        <code className="font-mono text-text-primary font-semibold">{selectedTag}</code>
+                        {isZh ? ' 单文件精准恢复' : ' single-file restore'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {(() => {
+                        const priority: Record<string, number> = {
+                          'edit_plan.json': 0,
+                          'script.txt': 1,
+                          'build/audio_timeline.json': 2,
+                          'build/subtitles.srt': 3,
+                          'build/assets_manifest.json': 4,
+                          'project.json': 5,
+                        };
+                        return diffData.files
+                          .filter((f) => f !== 'SNAPSHOTS.md' && f !== '.gitignore')
+                          .slice()
+                          .sort(
+                            (a, b) =>
+                              (priority[a] ?? 100) - (priority[b] ?? 100) || a.localeCompare(b),
+                          )
+                          .slice(0, 10)
+                          .map((file) => (
+                            <Button
+                              key={file}
+                              size="xs"
+                              variant="default"
+                              disabled={busySnap}
+                              onClick={() => void handleRestore(selectedTag, file)}
+                              className="font-mono text-[10.5px]"
+                            >
+                              <FileCode2 size={10} className="text-text-muted" />
+                              <span>{file}</span>
+                            </Button>
+                          ));
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* CodeMirror 6 Diff Viewer */}
+                  <div className="flex-1 min-h-[160px] flex flex-col gap-1 overflow-hidden">
+                    <div className="flex items-center justify-between font-mono text-[11px] text-text-muted shrink-0">
+                      <span>git diff {selectedTag}</span>
+                      <span>
+                        {diffData.patch
+                          ? `${diffData.patch.split('\n').length} lines`
+                          : isZh
+                            ? '无差异'
+                            : 'Clean'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-h-0 rounded-[8px] border border-border-subtle overflow-hidden">
+                      <CodeEditor
+                        value={
+                          diffData.patch ||
+                          (isZh
+                            ? '# 当前工作区与该快照完全一致，无未提交差异。'
+                            : '# Working tree matches this snapshot cleanly.')
+                        }
+                        language="diff"
+                        theme={uiTheme}
+                        readOnly
+                        lineNumbers
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-[12px] text-text-muted pt-2">
+                  {isZh
+                    ? '点击任意历史快照，即可查看与当前工作区的 Git Diff 并执行单文件精准回退。'
+                    : 'Select any snapshot above to view Git diff and restore individual files.'}
+                </div>
+              )}
+            </div>
+          </section>
+        </Panel>
+      </Group>
     </div>
   );
 };

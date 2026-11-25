@@ -35,43 +35,43 @@ function buildSplashDataUrl(): string {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%; height: 100%;
-      background: #0b0d11;
-      color: #e6eaf2;
+      background: #0b0b0d;
+      color: #ececef;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       display: flex; align-items: center; justify-content: center;
       user-select: none; overflow: hidden;
       -webkit-app-region: drag;
     }
     body {
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.075);
     }
     .card {
-      display: flex; flex-direction: column; align-items: center; gap: 18px;
-      padding: 36px 44px; border-radius: 18px;
-      background: linear-gradient(180deg, rgba(24,28,38,0.88), rgba(15,18,24,0.94));
-      border: 1px solid rgba(255,255,255,0.08);
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      padding: 36px 44px; border-radius: 12px;
+      background: #111113;
+      border: 1px solid rgba(255,255,255,0.085);
       box-shadow: 0 24px 64px rgba(0,0,0,0.52);
     }
     .badge {
-      width: 72px; height: 72px;
+      width: 64px; height: 64px;
       display: flex; align-items: center; justify-content: center;
       position: relative;
     }
     .badge img {
-      width: 72px; height: 72px;
+      width: 64px; height: 64px;
       display: block;
       object-fit: contain;
-      filter: drop-shadow(0 10px 24px rgba(245,158,11,0.22)) drop-shadow(0 6px 18px rgba(56,189,248,0.22));
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45));
     }
-    .title { font-size: 18px; font-weight: 700; letter-spacing: 0.2px; }
-    .sub { font-size: 13px; color: #94a3b8; }
+    .title { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+    .sub { font-size: 12.5px; color: #a1a1aa; }
     .bar {
-      width: 220px; height: 4px; border-radius: 999px;
+      width: 210px; height: 2px; border-radius: 999px;
       background: rgba(255,255,255,0.08); overflow: hidden;
     }
     .bar-inner {
-      width: 42%; height: 100%; border-radius: 999px;
-      background: linear-gradient(90deg, #f59e0b, #38bdf8, #fb7185);
+      width: 40%; height: 100%; border-radius: 999px;
+      background: #d99b26;
       animation: slide 1.15s ease-in-out infinite;
     }
     @keyframes slide {
@@ -331,7 +331,7 @@ async function createMainWindow(): Promise<void> {
     show: !isSmokeTest,
     title: 'CooDance Studio — Code-as-Video 16:9',
     icon: windowIcon,
-    backgroundColor: '#0b0d11',
+    backgroundColor: '#0b0b0d',
     ...(isMac
       ? {
           titleBarStyle: 'hiddenInset' as const,
@@ -530,10 +530,9 @@ async function runSmokeTest(): Promise<void> {
     mainWindow = null;
   }
   await Promise.race([
-    serverHandle.close().catch(() => {}),
+    closeEmbeddedServer(),
     new Promise<void>((resolve) => setTimeout(resolve, 3000)),
   ]);
-  serverHandle = null;
   app.exit(0);
 }
 
@@ -670,7 +669,7 @@ ipcMain.handle('coodance:window-get-state', (event) => {
 ipcMain.handle('coodance:window-set-theme', (event, theme: 'dark' | 'light') => {
   const win = resolveSenderWindow(event);
   if (win && !win.isDestroyed()) {
-    win.setBackgroundColor(theme === 'light' ? '#f3f4f6' : '#0b0d11');
+    win.setBackgroundColor(theme === 'light' ? '#f4f4f5' : '#0b0b0d');
   }
 });
 
@@ -861,7 +860,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (process.platform !== 'darwin' && !isSmokeTest) {
     app.quit();
   }
 });
