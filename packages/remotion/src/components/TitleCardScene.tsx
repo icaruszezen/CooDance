@@ -23,14 +23,13 @@ export const TitleCardScene: React.FC<TitleCardSceneProps> = ({
   const badge = props.badge ? String(props.badge) : '';
   const logoAsset = props.logoAsset ? String(props.logoAsset) : '';
 
-  const intro = spring({ frame, fps, config: { damping: 16, stiffness: 120 } });
+  const intro = spring({ frame, fps, config: { damping: 18, stiffness: 120 } });
   const subIntro = spring({ frame: Math.max(0, frame - 6), fps, config: { damping: 18, stiffness: 110 } });
-  const badgeIntro = spring({ frame: Math.max(0, frame - 10), fps, config: { damping: 16, stiffness: 130 } });
+  const ruleIntro = spring({ frame: Math.max(0, frame - 3), fps, config: { damping: 20, stiffness: 100 } });
 
-  const lineWidth = interpolate(intro, [0, 1], [64, 128]);
-  const titleOpacity = interpolate(intro, [0, 1], [0.88, 1]);
-  const subOpacity = interpolate(subIntro, [0, 1], [0.72, 1]);
-  const badgeOpacity = interpolate(badgeIntro, [0, 1], [0.76, 0.94]);
+  const lineWidth = interpolate(ruleIntro, [0, 1], [48, 160]);
+  const titleOpacity = interpolate(intro, [0, 1], [0.85, 1]);
+  const subOpacity = interpolate(subIntro, [0, 1], [0.7, 1]);
   const logoUrl = logoAsset ? resolveMediaUrl(mediaBaseUrl, logoAsset) : '';
 
   return (
@@ -40,138 +39,159 @@ export const TitleCardScene: React.FC<TitleCardSceneProps> = ({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        padding: '110px 140px 170px',
+        justifyContent: 'space-between',
+        padding: '64px 120px 156px',
         boxSizing: 'border-box',
         fontFamily: theme.fontSans,
         position: 'relative',
       }}
     >
-      {/* Subtle editorial top-right technical marker */}
+      {/* Top 1px Full-Width Editorial Header Rail */}
       <div
         style={{
-          position: 'absolute',
-          top: 72,
-          right: 120,
+          width: '100%',
           display: 'flex',
           alignItems: 'center',
-          gap: 14,
-          opacity: badgeOpacity,
-          transform: `translateY(${interpolate(badgeIntro, [0, 1], [10, 0])}px)`,
-        }}
-      >
-        {badge ? (
-          <div
-            style={{
-              padding: '10px 22px',
-              borderRadius: 999,
-              background: theme.surfaceElevated,
-              border: `1px solid ${theme.border}`,
-              color: theme.textSecondary,
-              fontFamily: theme.fontMono,
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-            }}
-          >
-            {badge}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Logo + Eyebrow row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 20,
-          marginBottom: 34,
+          justifyContent: 'space-between',
+          paddingBottom: 24,
+          borderBottom: `1px solid ${theme.border}`,
           opacity: titleOpacity,
-          transform: `translateY(${interpolate(intro, [0, 1], [14, 0])}px)`,
         }}
       >
-        {logoUrl ? (
-          <div
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span
             style={{
-              width: 64,
-              height: 64,
-              borderRadius: 16,
-              background: theme.surfaceElevated,
-              border: `1px solid ${theme.border}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 12,
-              boxSizing: 'border-box',
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              background: theme.accent,
+              flexShrink: 0,
+            }}
+          />
+          <span
+            style={{
+              fontFamily: theme.fontMono,
+              fontSize: 21,
+              fontWeight: 600,
+              letterSpacing: '0.14em',
+              color: theme.textSecondary,
+              textTransform: 'uppercase',
             }}
           >
-            <Img
-              src={logoUrl}
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
-          </div>
-        ) : null}
-        <div
-          style={{
-            fontFamily: theme.fontMono,
-            fontSize: 24,
-            fontWeight: 700,
-            letterSpacing: '0.16em',
-            color: theme.accent,
-            textTransform: 'uppercase',
-          }}
-        >
-          {eyebrow}
+            {eyebrow}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          {badge ? (
+            <span
+              style={{
+                fontFamily: theme.fontMono,
+                fontSize: 20,
+                fontWeight: 500,
+                letterSpacing: '0.06em',
+                color: theme.textMuted,
+                padding: '6px 14px',
+                borderRadius: 6,
+                border: `1px solid ${theme.border}`,
+                background: theme.surface,
+              }}
+            >
+              {badge}
+            </span>
+          ) : null}
+          {logoUrl ? (
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 10,
+                background: theme.surface,
+                border: `1px solid ${theme.borderStrong}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 8,
+                boxSizing: 'border-box',
+              }}
+            >
+              <Img
+                src={logoUrl}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {/* Main Heading */}
-      <h1
-        style={{
-          margin: 0,
-          fontSize: heading.length > 18 ? 78 : 92,
-          fontWeight: 800,
-          lineHeight: 1.14,
-          letterSpacing: '-0.025em',
-          color: theme.textPrimary,
-          maxWidth: 1520,
-          opacity: titleOpacity,
-          transform: `translateY(${interpolate(intro, [0, 1], [22, 0])}px)`,
-        }}
-      >
-        {heading}
-      </h1>
-
-      {/* Accent divider rule */}
+      {/* Main Typographic Hero Block */}
       <div
         style={{
-          marginTop: 38,
-          marginBottom: 34,
-          width: lineWidth,
-          height: 6,
-          borderRadius: 3,
-          background: theme.accent,
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          paddingTop: 24,
         }}
-      />
-
-      {/* Subheading */}
-      {subheading ? (
-        <p
+      >
+        <h1
           style={{
             margin: 0,
-            fontSize: 34,
-            lineHeight: 1.5,
-            fontWeight: 500,
-            color: theme.textSecondary,
-            maxWidth: 1320,
-            opacity: subOpacity,
-            transform: `translateY(${interpolate(subIntro, [0, 1], [16, 0])}px)`,
+            fontSize: heading.length > 18 ? 82 : 96,
+            fontWeight: 800,
+            lineHeight: 1.12,
+            letterSpacing: '-0.035em',
+            color: theme.textPrimary,
+            maxWidth: 1560,
+            opacity: titleOpacity,
+            transform: `translateY(${interpolate(intro, [0, 1], [18, 0])}px)`,
           }}
         >
-          {subheading}
-        </p>
-      ) : null}
+          {heading}
+        </h1>
+
+        {/* 2px Animated Accent Hairline Rule */}
+        <div
+          style={{
+            marginTop: 42,
+            marginBottom: 34,
+            width: '100%',
+            maxWidth: 640,
+            height: 2,
+            background: theme.border,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              width: lineWidth,
+              height: '100%',
+              background: theme.accent,
+            }}
+          />
+        </div>
+
+        {/* Subheading */}
+        {subheading ? (
+          <p
+            style={{
+              margin: 0,
+              fontSize: 32,
+              lineHeight: 1.5,
+              fontWeight: 400,
+              letterSpacing: '-0.01em',
+              color: theme.textSecondary,
+              maxWidth: 1320,
+              opacity: subOpacity,
+              transform: `translateY(${interpolate(subIntro, [0, 1], [14, 0])}px)`,
+            }}
+          >
+            {subheading}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 };

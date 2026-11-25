@@ -23,7 +23,7 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
 
   const windowIn = spring({ frame, fps, config: { damping: 18, stiffness: 115 } });
   const cursorMove = spring({ frame: Math.max(0, frame - 24), fps, config: { damping: 16, stiffness: 90 } });
-  const clickPulse = spring({ frame: Math.max(0, frame - 52), fps, config: { damping: 12, stiffness: 180 } });
+  const clickPulse = spring({ frame: Math.max(0, frame - 52), fps, config: { damping: 14, stiffness: 180 } });
 
   const targetX = 320 + Math.min(2, Math.max(0, cursorTargetIndex)) * 480;
   const cursorX = interpolate(cursorMove, [0, 1], [1280, targetX]);
@@ -34,7 +34,7 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
       style={{
         width: '100%',
         height: '100%',
-        padding: '56px 96px 164px',
+        padding: '54px 96px 162px',
         boxSizing: 'border-box',
         display: 'flex',
         alignItems: 'center',
@@ -46,56 +46,58 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
         style={{
           width: '100%',
           height: '100%',
-          borderRadius: 24,
+          borderRadius: 16,
           overflow: 'hidden',
           background: theme.surface,
-          border: `1px solid ${theme.border}`,
-          boxShadow: '0 32px 84px rgba(0,0,0,0.42)',
+          border: `1px solid ${theme.borderStrong}`,
+          boxShadow: theme.isLight
+            ? '0 22px 54px rgba(20, 20, 22, 0.08)'
+            : '0 26px 68px rgba(0, 0, 0, 0.45)',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
           opacity: windowIn,
-          transform: `scale(${interpolate(windowIn, [0, 1], [0.96, 1])})`,
+          transform: `scale(${interpolate(windowIn, [0, 1], [0.975, 1])})`,
         }}
       >
-        {/* Browser Chrome */}
+        {/* Minimal Browser Chrome with Muted Gray Dots */}
         <div
           style={{
-            height: 58,
+            height: 54,
             background: theme.surfaceElevated,
             borderBottom: `1px solid ${theme.border}`,
-            padding: '0 24px',
+            padding: '0 22px',
             display: 'flex',
             alignItems: 'center',
-            gap: 20,
+            gap: 18,
             flexShrink: 0,
           }}
         >
-          <div style={{ display: 'flex', gap: 9 }}>
-            <span style={{ width: 13, height: 13, borderRadius: '50%', background: '#ef4444' }} />
-            <span style={{ width: 13, height: 13, borderRadius: '50%', background: '#f59e0b' }} />
-            <span style={{ width: 13, height: 13, borderRadius: '50%', background: '#10b981' }} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <span style={{ width: 11, height: 11, borderRadius: '50%', background: theme.borderStrong }} />
+            <span style={{ width: 11, height: 11, borderRadius: '50%', background: theme.borderStrong }} />
+            <span style={{ width: 11, height: 11, borderRadius: '50%', background: theme.borderStrong }} />
           </div>
 
           <div
             style={{
               flex: 1,
-              height: 36,
-              borderRadius: 10,
-              background: theme.bg,
+              height: 32,
+              borderRadius: 7,
+              background: theme.surfaceInset,
               border: `1px solid ${theme.border}`,
               display: 'flex',
               alignItems: 'center',
-              padding: '0 18px',
+              padding: '0 16px',
               fontFamily: theme.fontMono,
-              fontSize: 18,
+              fontSize: 17,
               color: theme.textMuted,
             }}
           >
             {url}
           </div>
 
-          <div style={{ fontSize: 18, fontWeight: 600, color: theme.textSecondary }}>
+          <div style={{ fontSize: 17, fontWeight: 500, color: theme.textSecondary }}>
             {pageTitle}
           </div>
         </div>
@@ -104,7 +106,7 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
         <div
           style={{
             flex: 1,
-            padding: '54px 64px',
+            padding: '50px 60px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -112,13 +114,14 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 36 }}>
-            <div style={{ maxWidth: 1120 }}>
+            <div style={{ maxWidth: 1100 }}>
               <h2
                 style={{
                   margin: 0,
                   fontSize: 48,
                   fontWeight: 800,
-                  lineHeight: 1.2,
+                  lineHeight: 1.18,
+                  letterSpacing: '-0.03em',
                   color: theme.textPrimary,
                 }}
               >
@@ -127,8 +130,8 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
               {description ? (
                 <p
                   style={{
-                    margin: '18px 0 0',
-                    fontSize: 25,
+                    margin: '16px 0 0',
+                    fontSize: 24,
                     lineHeight: 1.5,
                     color: theme.textSecondary,
                   }}
@@ -138,14 +141,15 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
               ) : null}
             </div>
 
+            {/* High-Contrast Monochrome CTA */}
             <div
               style={{
-                padding: '16px 30px',
-                borderRadius: 14,
-                background: theme.accent,
-                color: theme.accentText,
-                fontSize: 22,
-                fontWeight: 800,
+                padding: '15px 28px',
+                borderRadius: 9,
+                background: theme.primary,
+                color: theme.primaryText,
+                fontSize: 21,
+                fontWeight: 700,
                 flexShrink: 0,
               }}
             >
@@ -153,57 +157,61 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
             </div>
           </div>
 
-          {/* Highlight Feature Cards */}
+          {/* 1px Divider Feature Grid with Top Focus Bar */}
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, highlights.length))}, minmax(0, 1fr))`,
-              gap: 24,
+              gap: 1,
+              background: theme.border,
+              border: `1px solid ${theme.border}`,
+              borderRadius: 12,
+              overflow: 'hidden',
             }}
           >
             {highlights.map((card, idx) => {
               const isFocused = idx === cursorTargetIndex && frame >= 48;
               const cardIn = spring({
-                frame: Math.max(0, frame - 10 - idx * 6),
+                frame: Math.max(0, frame - 8 - idx * 5),
                 fps,
-                config: { damping: 17, stiffness: 120 },
+                config: { damping: 18, stiffness: 120 },
               });
               return (
                 <div
                   key={idx}
                   style={{
                     padding: '28px 30px',
-                    borderRadius: 18,
-                    background: isFocused ? theme.surfaceElevated : theme.bg,
-                    border: `1px solid ${isFocused ? theme.accent : theme.border}`,
+                    background: isFocused ? theme.surfaceElevated : theme.surface,
+                    borderTop: `3px solid ${isFocused ? theme.accent : 'transparent'}`,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 14,
                     opacity: cardIn,
-                    transform: `translateY(${interpolate(cardIn, [0, 1], [22, 0])}px) scale(${isFocused ? 1.02 : 1})`,
+                    transform: `translateY(${interpolate(cardIn, [0, 1], [14, 0])}px)`,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: theme.textPrimary }}>
+                    <div style={{ fontSize: 25, fontWeight: 700, color: theme.textPrimary, letterSpacing: '-0.02em' }}>
                       {card.title}
                     </div>
                     {card.badge ? (
                       <span
                         style={{
-                          padding: '5px 12px',
-                          borderRadius: 8,
-                          background: theme.accentSoft,
-                          color: theme.accent,
+                          padding: '3px 10px',
+                          borderRadius: 5,
+                          border: `1px solid ${isFocused ? theme.accent : theme.border}`,
+                          background: isFocused ? theme.accentSoft : theme.surfaceInset,
+                          color: isFocused ? theme.accent : theme.textMuted,
                           fontFamily: theme.fontMono,
-                          fontSize: 16,
-                          fontWeight: 700,
+                          fontSize: 15,
+                          fontWeight: 600,
                         }}
                       >
                         {card.badge}
                       </span>
                     ) : null}
                   </div>
-                  <div style={{ fontSize: 21, lineHeight: 1.5, color: theme.textSecondary }}>
+                  <div style={{ fontSize: 20, lineHeight: 1.5, color: theme.textSecondary }}>
                     {card.description}
                   </div>
                 </div>
@@ -211,7 +219,7 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
             })}
           </div>
 
-          {/* Animated SVG Cursor + Click Ripple */}
+          {/* Animated SVG Cursor + Restrained Click Ripple */}
           <div
             style={{
               position: 'absolute',
@@ -225,22 +233,22 @@ export const WebDomScene: React.FC<WebDomSceneProps> = ({ props, theme }) => {
               <div
                 style={{
                   position: 'absolute',
-                  left: -26,
-                  top: -26,
-                  width: 52,
-                  height: 52,
+                  left: -24,
+                  top: -24,
+                  width: 48,
+                  height: 48,
                   borderRadius: '50%',
-                  border: `3px solid ${theme.accent}`,
-                  transform: `scale(${interpolate(clickPulse, [0, 1], [0.3, 1.5])})`,
-                  opacity: interpolate(clickPulse, [0, 1], [0.9, 0]),
+                  border: `2px solid ${theme.accent}`,
+                  transform: `scale(${interpolate(clickPulse, [0, 1], [0.35, 1.45])})`,
+                  opacity: interpolate(clickPulse, [0, 1], [0.85, 0]),
                 }}
               />
             ) : null}
-            <svg width="34" height="34" viewBox="0 0 28 28" fill="none">
+            <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
               <path
                 d="M4 3L23 13.5L14.5 16L11.5 24.5L4 3Z"
-                fill="#ffffff"
-                stroke="#0f172a"
+                fill={theme.isLight ? '#141416' : '#f4f4f5'}
+                stroke={theme.isLight ? '#ffffff' : '#09090b'}
                 strokeWidth="2.2"
                 strokeLinejoin="round"
               />

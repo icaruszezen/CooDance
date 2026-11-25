@@ -9,17 +9,31 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
     "@coodance/remotion": "*",
+    "@lezer/highlight": "^1.2.5",
     "@remotion/player": "4.0.414",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "remotion": "4.0.414"
+    "react-resizable-panels": "^4.24.2",
+    "remotion": "4.0.414",
+    "tailwind-merge": "^3.7.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.4",
     "@vitejs/plugin-react": "^4.4.1",
+    "tailwindcss": "^4.3.5",
     "vite": "^6.3.5"
   }
 }

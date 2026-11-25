@@ -146,8 +146,15 @@ export const VideoComposition: React.FC<VideoCompositionProps> = ({
       {resolved.sfxEvents.map((sfx) => {
         const sfxUrl = resolveMediaUrl(mediaBaseUrl, sfx.assetPath);
         if (!sfxUrl) return null;
+        const maxRemaining = Math.max(1, resolved.durationInFrames - sfx.startFrame);
+        const durationInFrames = Math.min(maxRemaining, Math.max(1, Math.round(fps * 3)));
         return (
-          <Sequence key={sfx.id} from={sfx.startFrame} layout="none">
+          <Sequence
+            key={sfx.id}
+            from={sfx.startFrame}
+            durationInFrames={durationInFrames}
+            layout="none"
+          >
             <Audio src={sfxUrl} volume={typeof sfx.volume === 'number' ? sfx.volume : 0.45} />
           </Sequence>
         );

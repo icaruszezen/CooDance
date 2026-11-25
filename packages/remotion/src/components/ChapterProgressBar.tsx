@@ -31,8 +31,8 @@ export const ChapterProgressBar: React.FC<ChapterProgressBarProps> = ({
         bottom: 24,
         zIndex: 45,
         display: 'flex',
-        alignItems: 'center',
-        gap: 18,
+        alignItems: 'flex-end',
+        gap: 20,
         fontFamily: theme.fontSans,
       }}
     >
@@ -62,26 +62,27 @@ export const ChapterProgressBar: React.FC<ChapterProgressBarProps> = ({
                 flex: Math.max(0.08, weight),
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 6,
+                gap: 7,
                 minWidth: 0,
               }}
             >
               <div
                 style={{
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: isActive ? 700 : 500,
                   color: isActive ? theme.textPrimary : theme.textMuted,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  letterSpacing: '-0.01em',
                 }}
               >
                 {ch.title}
               </div>
               <div
                 style={{
-                  height: isActive ? 6 : 4,
-                  borderRadius: 99,
+                  height: isActive ? 3 : 2,
+                  borderRadius: 2,
                   background: theme.border,
                   overflow: 'hidden',
                 }}
@@ -91,7 +92,7 @@ export const ChapterProgressBar: React.FC<ChapterProgressBarProps> = ({
                     width: `${fillPct.toFixed(1)}%`,
                     height: '100%',
                     background: ch.color || (isActive ? theme.accent : theme.textMuted),
-                    borderRadius: 99,
+                    borderRadius: 2,
                   }}
                 />
               </div>
@@ -103,11 +104,14 @@ export const ChapterProgressBar: React.FC<ChapterProgressBarProps> = ({
       <div
         style={{
           fontFamily: theme.fontMono,
-          fontSize: 18,
-          fontWeight: 600,
-          color: theme.textSecondary,
+          fontSize: 17,
+          fontWeight: 500,
+          fontVariantNumeric: 'tabular-nums',
+          color: theme.textMuted,
           flexShrink: 0,
           paddingLeft: 8,
+          lineHeight: 1,
+          paddingBottom: 2,
         }}
       >
         {formatTimecode(currentSec)} / {formatTimecode(totalSec)}

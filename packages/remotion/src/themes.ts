@@ -4,14 +4,19 @@ export interface VideoThemeTokens {
   id: VideoThemeId;
   nameZh: string;
   nameEn: string;
+  isLight: boolean;
   bg: string;
   bgRadial: string;
   surface: string;
   surfaceElevated: string;
+  surfaceInset: string;
   border: string;
+  borderStrong: string;
   textPrimary: string;
   textSecondary: string;
   textMuted: string;
+  primary: string;
+  primaryText: string;
   accent: string;
   accentSoft: string;
   accentText: string;
@@ -26,7 +31,7 @@ export interface VideoThemeTokens {
 }
 
 const FONT_SANS =
-  '"PingFang SC", "Noto Sans SC", "Hiragino Sans GB", "Microsoft YaHei", "Inter", -apple-system, BlinkMacSystemFont, sans-serif';
+  '"PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Hiragino Sans GB", "Microsoft YaHei", "Inter", -apple-system, BlinkMacSystemFont, sans-serif';
 const FONT_MONO =
   '"JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace';
 
@@ -35,24 +40,28 @@ export const VIDEO_THEMES: Record<VideoThemeId, VideoThemeTokens> = {
     id: 'obsidian-studio',
     nameZh: '暗影工坊',
     nameEn: 'Obsidian Studio',
-    bg: '#0b0e13',
-    bgRadial:
-      'radial-gradient(1200px 680px at 82% 14%, rgba(245, 158, 11, 0.10), transparent 62%), radial-gradient(900px 580px at 14% 88%, rgba(14, 165, 233, 0.09), transparent 62%), #0b0e13',
-    surface: '#131821',
-    surfaceElevated: '#1a212e',
-    border: 'rgba(255, 255, 255, 0.10)',
-    textPrimary: '#f8fafc',
-    textSecondary: '#cbd5e1',
-    textMuted: '#7f8ea3',
-    accent: '#f59e0b',
-    accentSoft: 'rgba(245, 158, 11, 0.14)',
-    accentText: '#111318',
-    secondary: '#0ea5e9',
-    secondarySoft: 'rgba(14, 165, 233, 0.15)',
-    success: '#10b981',
-    danger: '#ef4444',
-    subtitleBg: 'rgba(11, 14, 19, 0.84)',
-    subtitleText: '#f8fafc',
+    isLight: false,
+    bg: '#09090b',
+    bgRadial: 'linear-gradient(180deg, #0c0c0e 0%, #09090b 100%)',
+    surface: '#111114',
+    surfaceElevated: '#18181c',
+    surfaceInset: '#0c0c0e',
+    border: 'rgba(255, 255, 255, 0.085)',
+    borderStrong: 'rgba(255, 255, 255, 0.16)',
+    textPrimary: '#f4f4f5',
+    textSecondary: '#a1a1aa',
+    textMuted: '#71717a',
+    primary: '#f4f4f5',
+    primaryText: '#09090b',
+    accent: '#d99b26',
+    accentSoft: 'rgba(217, 155, 38, 0.12)',
+    accentText: '#09090b',
+    secondary: '#65a8d4',
+    secondarySoft: 'rgba(101, 168, 212, 0.13)',
+    success: '#4cb487',
+    danger: '#dc6868',
+    subtitleBg: 'rgba(9, 9, 11, 0.9)',
+    subtitleText: '#f4f4f5',
     fontSans: FONT_SANS,
     fontMono: FONT_MONO,
   },
@@ -60,49 +69,57 @@ export const VIDEO_THEMES: Record<VideoThemeId, VideoThemeTokens> = {
     id: 'ivory-editorial',
     nameZh: '极简白昼',
     nameEn: 'Ivory Editorial',
-    bg: '#f5f4ef',
-    bgRadial:
-      'radial-gradient(1000px 620px at 84% 12%, rgba(217, 119, 6, 0.08), transparent 60%), radial-gradient(880px 520px at 12% 88%, rgba(2, 132, 199, 0.07), transparent 60%), #f5f4ef',
+    isLight: true,
+    bg: '#f5f4f0',
+    bgRadial: 'linear-gradient(180deg, #f8f7f3 0%, #f5f4f0 100%)',
     surface: '#ffffff',
-    surfaceElevated: '#faf9f6',
-    border: 'rgba(15, 23, 42, 0.10)',
-    textPrimary: '#0f172a',
-    textSecondary: '#334155',
-    textMuted: '#64748b',
-    accent: '#d97706',
-    accentSoft: 'rgba(217, 119, 6, 0.12)',
+    surfaceElevated: '#faf9f7',
+    surfaceInset: '#eeede8',
+    border: 'rgba(20, 20, 22, 0.09)',
+    borderStrong: 'rgba(20, 20, 22, 0.18)',
+    textPrimary: '#141416',
+    textSecondary: '#52525b',
+    textMuted: '#7a7a85',
+    primary: '#18181b',
+    primaryText: '#ffffff',
+    accent: '#b57913',
+    accentSoft: 'rgba(181, 121, 19, 0.11)',
     accentText: '#ffffff',
-    secondary: '#0284c7',
-    secondarySoft: 'rgba(2, 132, 199, 0.12)',
-    success: '#059669',
-    danger: '#dc2626',
-    subtitleBg: 'rgba(15, 23, 42, 0.88)',
+    secondary: '#3a7ca5',
+    secondarySoft: 'rgba(58, 124, 165, 0.11)',
+    success: '#2e8b64',
+    danger: '#c54b4b',
+    subtitleBg: 'rgba(20, 20, 22, 0.9)',
     subtitleText: '#ffffff',
     fontSans: FONT_SANS,
     fontMono: FONT_MONO,
   },
   'cyber-emerald': {
     id: 'cyber-emerald',
-    nameZh: '赛博翠光',
-    nameEn: 'Cyber Emerald',
-    bg: '#061114',
-    bgRadial:
-      'radial-gradient(1100px 640px at 80% 15%, rgba(16, 185, 129, 0.12), transparent 60%), radial-gradient(880px 560px at 18% 85%, rgba(34, 211, 238, 0.09), transparent 60%), #061114',
-    surface: '#0b1b20',
-    surfaceElevated: '#11272e',
-    border: 'rgba(148, 224, 200, 0.14)',
-    textPrimary: '#ecfdf5',
-    textSecondary: '#b7dad0',
-    textMuted: '#6e9692',
-    accent: '#10b981',
-    accentSoft: 'rgba(16, 185, 129, 0.16)',
-    accentText: '#04120e',
-    secondary: '#22d3ee',
-    secondarySoft: 'rgba(34, 211, 238, 0.14)',
-    success: '#34d399',
-    danger: '#f87171',
-    subtitleBg: 'rgba(6, 17, 20, 0.86)',
-    subtitleText: '#ecfdf5',
+    nameZh: '深林翠灰',
+    nameEn: 'Deep Pine',
+    isLight: false,
+    bg: '#070e0e',
+    bgRadial: 'linear-gradient(180deg, #0a1313 0%, #070e0e 100%)',
+    surface: '#0e1717',
+    surfaceElevated: '#142020',
+    surfaceInset: '#091010',
+    border: 'rgba(216, 240, 232, 0.09)',
+    borderStrong: 'rgba(216, 240, 232, 0.17)',
+    textPrimary: '#eef6f3',
+    textSecondary: '#9eb6ae',
+    textMuted: '#6a837b',
+    primary: '#eef6f3',
+    primaryText: '#070e0e',
+    accent: '#4cb487',
+    accentSoft: 'rgba(76, 180, 135, 0.13)',
+    accentText: '#06120e',
+    secondary: '#65a8d4',
+    secondarySoft: 'rgba(101, 168, 212, 0.12)',
+    success: '#5ec99b',
+    danger: '#dc6868',
+    subtitleBg: 'rgba(7, 14, 14, 0.9)',
+    subtitleText: '#eef6f3',
     fontSans: FONT_SANS,
     fontMono: FONT_MONO,
   },

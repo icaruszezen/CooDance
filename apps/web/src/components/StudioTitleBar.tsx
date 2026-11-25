@@ -4,14 +4,10 @@ import {
   Bot,
   CheckCircle2,
   ChevronDown,
-  Clapperboard,
   Clipboard,
   Copy,
   Download,
-  FileText,
-  Film,
   Languages,
-  Layers,
   Loader2,
   Maximize2,
   Minimize2,
@@ -22,6 +18,7 @@ import {
   RefreshCw,
   RotateCcw,
   Scissors,
+  Search,
   Settings,
   Sun,
   Tag,
@@ -37,6 +34,7 @@ import type {
 } from '../api';
 import { UiLang, t } from '../i18n';
 import { BrandMark } from './BrandMark';
+import { Button, StudioTooltip, cn } from './ui';
 
 export type StageTab = 'script' | 'assets' | 'storyboard' | 'render';
 
@@ -48,6 +46,7 @@ interface StudioTitleBarProps {
   windowState: DesktopWindowStateDto;
   updateStatus: DesktopUpdateStatusDto;
   onSelectTab: (tab: StageTab) => void;
+  onOpenCommandPalette: () => void;
   onOpenAgentHub: () => void;
   onOpenUpdateModal: () => void;
   onQuickSnapshot: () => void;
@@ -101,7 +100,7 @@ export const DesktopWindowControls: React.FC<DesktopWindowControlsProps> = ({
         aria-label={t(lang, 'winMinimize')}
         onClick={handleMinimize}
       >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <line
             x1="1.5"
             y1="6"
@@ -125,7 +124,7 @@ export const DesktopWindowControls: React.FC<DesktopWindowControlsProps> = ({
         {windowState.isFullScreen ? (
           <Minimize2 size={12} strokeWidth={1.6} aria-hidden="true" />
         ) : isRestorable ? (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <rect
               x="1.75"
               y="3.75"
@@ -143,7 +142,7 @@ export const DesktopWindowControls: React.FC<DesktopWindowControlsProps> = ({
             />
           </svg>
         ) : (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <rect
               x="2"
               y="2"
@@ -165,7 +164,7 @@ export const DesktopWindowControls: React.FC<DesktopWindowControlsProps> = ({
         aria-label={t(lang, 'winClose')}
         onClick={handleClose}
       >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
             d="M2.5 2.5L9.5 9.5M9.5 2.5L2.5 9.5"
             stroke="currentColor"
@@ -186,6 +185,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
   windowState,
   updateStatus,
   onSelectTab,
+  onOpenCommandPalette,
   onOpenAgentHub,
   onOpenUpdateModal,
   onQuickSnapshot,
@@ -293,26 +293,24 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
     },
   ];
 
-  const topbarClasses = [
+  const topbarClasses = cn(
     'studio-topbar',
-    isDesktop ? 'is-desktop' : '',
-    isMac ? 'platform-darwin' : '',
-    hasCustomWindowControls ? 'has-window-controls' : '',
-    isDesktop && !windowState.isFocused ? 'window-unfocused' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+    isDesktop && 'is-desktop',
+    isMac && 'platform-darwin',
+    hasCustomWindowControls && 'has-window-controls',
+    isDesktop && !windowState.isFocused && 'window-unfocused',
+  );
 
   return (
     <header className={topbarClasses}>
       {/* Left: Brand & Integrated Desktop Studio Menu */}
-      <div className="topbar-left" ref={menuContainerRef}>
+      <div className="flex items-center gap-2 shrink-0" ref={menuContainerRef}>
         {isDesktop ? (
           <div className="brand-menu-anchor">
             <button
               id="btn-studio-app-menu"
               type="button"
-              className={`brand-menu-trigger ${menuOpen ? 'open' : ''}`}
+              className={cn('brand-menu-trigger', menuOpen && 'open')}
               title={t(lang, 'appMenuTitle')}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
@@ -320,9 +318,11 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
               onClick={() => setMenuOpen((prev) => !prev)}
             >
               <BrandMark size="sm" />
-              <h1 className="brand-title">CooDance</h1>
+              <span className="text-[13.5px] font-bold tracking-[-0.02em] text-text-primary">
+                CooDance
+              </span>
               <span className="brand-menu-chevron" aria-hidden="true">
-                <ChevronDown size={13} />
+                <ChevronDown size={12} />
               </span>
             </button>
 
@@ -348,7 +348,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                           onClick={() => void runEditAction(item.action)}
                         >
                           <span className="app-menu-item-main">
-                            <Icon size={13} />
+                            <Icon size={12} />
                             <span>{item.label}</span>
                           </span>
                           <kbd className="app-menu-kbd">{item.shortcut}</kbd>
@@ -373,7 +373,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                         disabled={zoomPercent <= 70}
                         onClick={() => void runViewAction('zoomOut', true)}
                       >
-                        <Minus size={12} />
+                        <Minus size={11} />
                       </button>
                       <button
                         type="button"
@@ -390,7 +390,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                         disabled={zoomPercent >= 150}
                         onClick={() => void runViewAction('zoomIn', true)}
                       >
-                        <Plus size={12} />
+                        <Plus size={11} />
                       </button>
                     </div>
                   </div>
@@ -402,7 +402,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                     onClick={() => void runViewAction('toggleFullScreen')}
                   >
                     <span className="app-menu-item-main">
-                      {windowState.isFullScreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                      {windowState.isFullScreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
                       <span>
                         {windowState.isFullScreen
                           ? t(lang, 'menuExitFullscreen')
@@ -419,7 +419,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                     onClick={() => void runViewAction('reload')}
                   >
                     <span className="app-menu-item-main">
-                      <RefreshCw size={13} />
+                      <RefreshCw size={12} />
                       <span>{t(lang, 'menuReload')}</span>
                     </span>
                     <kbd className="app-menu-kbd">{`${modKey}R`}</kbd>
@@ -432,7 +432,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                     onClick={() => void runViewAction('forceReload')}
                   >
                     <span className="app-menu-item-main">
-                      <RotateCcw size={13} />
+                      <RotateCcw size={12} />
                       <span>{t(lang, 'menuForceReload')}</span>
                     </span>
                     <kbd className="app-menu-kbd">{isMac ? '⇧⌘R' : 'Ctrl+Shift+R'}</kbd>
@@ -445,7 +445,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                     onClick={() => void runViewAction('toggleDevTools')}
                   >
                     <span className="app-menu-item-main">
-                      <Terminal size={13} />
+                      <Terminal size={12} />
                       <span>{t(lang, 'menuDevTools')}</span>
                     </span>
                     <kbd className="app-menu-kbd">{isMac ? '⌥⌘I' : 'Ctrl+Shift+I'}</kbd>
@@ -466,23 +466,23 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                     }}
                   >
                     <span className="app-menu-item-main">
-                      <ArrowUpCircle size={13} />
+                      <ArrowUpCircle size={12} />
                       <span>{t(lang, 'menuCheckUpdate')}</span>
                     </span>
                     {updateStatus.phase === 'ready' && updateStatus.checkResult ? (
-                      <span className="chip chip-emerald mono" style={{ padding: '1px 6px', fontSize: 10 }}>
+                      <span className="font-mono text-[10.5px] text-emerald">
                         v{updateStatus.checkResult.latestVersion}
                       </span>
                     ) : updateStatus.phase === 'downloading' && updateStatus.download ? (
-                      <span className="chip chip-cyan mono" style={{ padding: '1px 6px', fontSize: 10 }}>
+                      <span className="font-mono text-[10.5px] text-cyan">
                         {Math.round(updateStatus.download.percent)}%
                       </span>
                     ) : updateStatus.checkResult?.updateAvailable ? (
-                      <span className="chip chip-accent mono" style={{ padding: '1px 6px', fontSize: 10 }}>
+                      <span className="font-mono text-[10.5px] text-accent">
                         v{updateStatus.checkResult.latestVersion}
                       </span>
                     ) : (
-                      <span className="mono" style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                      <span className="font-mono text-[10.5px] text-text-muted">
                         v{windowState.appVersion || updateStatus.currentVersion}
                       </span>
                     )}
@@ -490,7 +490,7 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
                 </div>
 
                 <div className="app-menu-footer">
-                  <span className="status-dot" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald shrink-0" />
                   <span>{platformLabel}</span>
                   {windowState.appVersion || updateStatus.currentVersion ? (
                     <span className="mono app-menu-version">
@@ -502,152 +502,180 @@ export const StudioTitleBar: React.FC<StudioTitleBarProps> = ({
             ) : null}
           </div>
         ) : (
-          <div className="brand-group">
+          <div className="flex items-center gap-2">
             <BrandMark size="sm" />
-            <h1 className="brand-title">CooDance</h1>
-            <button
-              id="btn-web-version-badge"
-              type="button"
-              className="brand-badge brand-badge-btn"
-              title={t(lang, 'updateCenter')}
-              onClick={onOpenUpdateModal}
-            >
-              {platformLabel}
-              {updateStatus.currentVersion ? ` · v${updateStatus.currentVersion}` : ''}
-            </button>
+            <h1 className="m-0 text-[13.5px] font-bold tracking-[-0.02em] text-text-primary leading-none">
+              CooDance
+            </h1>
+            <StudioTooltip content={t(lang, 'updateCenter')}>
+              <button
+                id="btn-web-version-badge"
+                type="button"
+                onClick={onOpenUpdateModal}
+                className="font-mono text-[10.5px] text-text-muted hover:text-text-secondary px-1.5 py-0.5 rounded-[5px] border border-border-subtle bg-elevated/60 hover:bg-hover transition-colors cursor-pointer"
+              >
+                {updateStatus.currentVersion ? `v${updateStatus.currentVersion}` : platformLabel}
+              </button>
+            </StudioTooltip>
           </div>
         )}
       </div>
 
-      {/* Center: 4-Stage Video Pipeline Switcher */}
-      <nav className="stage-nav" aria-label="Pipeline Stages">
+      {/* Center: 01..04 Precision Pipeline Segmented Switcher */}
+      <nav
+        className="stage-nav inline-flex items-center gap-0.5 p-[2px] rounded-[7px] bg-canvas border border-border-subtle shrink-0"
+        aria-label="Pipeline Stages"
+      >
         {(
           [
-            { id: 'script', num: 1, label: t(lang, 'tabScript'), icon: FileText },
-            { id: 'assets', num: 2, label: t(lang, 'tabAssets'), icon: Film },
-            { id: 'storyboard', num: 3, label: t(lang, 'tabStoryboard'), icon: Layers },
-            { id: 'render', num: 4, label: t(lang, 'tabRender'), icon: Clapperboard },
+            { id: 'script', num: '01', label: t(lang, 'tabScript') },
+            { id: 'assets', num: '02', label: t(lang, 'tabAssets') },
+            { id: 'storyboard', num: '03', label: t(lang, 'tabStoryboard') },
+            { id: 'render', num: '04', label: t(lang, 'tabRender') },
           ] as const
         ).map((item) => {
-          const Icon = item.icon;
+          const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               id={`tab-${item.id}`}
               type="button"
-              className={`stage-tab ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => onSelectTab(item.id)}
+              className={cn(
+                'inline-flex items-center gap-1.5 h-[26px] px-2.5 rounded-[5px] text-[12px] font-medium whitespace-nowrap cursor-pointer transition-colors duration-100',
+                isActive
+                  ? 'bg-elevated text-text-primary shadow-studio-sm'
+                  : 'text-text-muted hover:text-text-secondary hover:bg-hover/60',
+              )}
             >
-              <span className="stage-step-num">{item.num}</span>
-              <Icon size={13} />
+              <span
+                className={cn(
+                  'font-mono text-[10.5px] tabular-nums',
+                  isActive ? 'text-accent font-semibold' : 'text-text-muted',
+                )}
+              >
+                {item.num}
+              </span>
               <span>{item.label}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* Right: Studio Actions + Custom Window Controls */}
-      <div className="topbar-right">
-        <div className="topbar-actions">
+      {/* Right: Command Palette, Agent Hub, Actions & Window Controls */}
+      <div className="flex items-center h-full shrink-0">
+        <div className="topbar-actions flex items-center gap-1.5">
           {updateStatus.phase === 'downloading' || updateStatus.phase === 'verifying' ? (
-            <button
+            <Button
               id="btn-topbar-update-pill"
-              type="button"
-              className="btn btn-sm topbar-update-pill downloading"
-              title={t(lang, 'updateCenter')}
+              size="sm"
+              variant="default"
               onClick={onOpenUpdateModal}
+              className="text-cyan border-cyan/30"
             >
               <Loader2 size={12} className="spin-icon" />
-              <span className="mono">
+              <span className="font-mono text-[11px]">
                 {updateStatus.phase === 'verifying'
                   ? lang === 'zh-CN'
                     ? '校验中'
                     : 'Verifying'
-                  : `${t(lang, 'updateDownloadingShort')} ${Math.round(updateStatus.download?.percent || 0)}%`}
+                  : `${Math.round(updateStatus.download?.percent || 0)}%`}
               </span>
-            </button>
+            </Button>
           ) : updateStatus.phase === 'ready' && updateStatus.checkResult ? (
-            <button
+            <Button
               id="btn-topbar-update-pill"
-              type="button"
-              className="btn btn-sm topbar-update-pill ready"
-              title={t(lang, 'updateCenter')}
+              size="sm"
+              variant="default"
               onClick={onOpenUpdateModal}
+              className="text-emerald border-emerald/30"
             >
               <CheckCircle2 size={12} />
-              <span>
-                {t(lang, 'updateReadyShort')} v{updateStatus.checkResult.latestVersion}
-              </span>
-            </button>
+              <span>v{updateStatus.checkResult.latestVersion}</span>
+            </Button>
           ) : updateStatus.checkResult?.updateAvailable && !updateStatus.checkResult.isSkipped ? (
-            <button
+            <Button
               id="btn-topbar-update-pill"
-              type="button"
-              className="btn btn-sm topbar-update-pill available"
-              title={t(lang, 'updateCenter')}
+              size="sm"
+              variant="default"
               onClick={onOpenUpdateModal}
+              className="text-accent border-accent/35"
             >
               <Download size={12} />
-              <span>
-                {t(lang, 'updateAvailableShort')} v{updateStatus.checkResult.latestVersion}
-              </span>
-            </button>
+              <span>v{updateStatus.checkResult.latestVersion}</span>
+            </Button>
           ) : null}
 
-          <button
-            id="btn-open-agent-hub"
-            type="button"
-            className="btn btn-sm topbar-agent-btn"
-            title={t(lang, 'agentHub')}
-            onClick={onOpenAgentHub}
+          <StudioTooltip
+            content={lang === 'zh-CN' ? '命令面板' : 'Command Palette'}
+            kbd={isMac ? '⌘K' : 'Ctrl+K'}
           >
-            <Bot size={13} />
-            <span>{t(lang, 'agentHubShort')}</span>
-            <span className="topbar-hide-compact"> (MCP &amp; Skill)</span>
-          </button>
+            <button
+              id="btn-command-palette"
+              type="button"
+              onClick={onOpenCommandPalette}
+              className="inline-flex items-center gap-1.5 h-7 px-2 rounded-[6px] bg-canvas border border-border-subtle text-text-muted hover:text-text-primary hover:border-border-strong transition-colors cursor-pointer"
+            >
+              <Search size={12} />
+              <kbd className="font-mono text-[10.5px] leading-none">
+                {isMac ? '⌘K' : 'Ctrl K'}
+              </kbd>
+            </button>
+          </StudioTooltip>
+
+          <StudioTooltip content={t(lang, 'agentHub')}>
+            <Button
+              id="btn-open-agent-hub"
+              size="sm"
+              variant="default"
+              onClick={onOpenAgentHub}
+            >
+              <Bot size={13} className="text-text-secondary" />
+              <span>{t(lang, 'agentHubShort')}</span>
+            </Button>
+          </StudioTooltip>
 
           {activeSlug ? (
-            <button
-              id="btn-quick-snapshot"
-              type="button"
-              className="btn btn-sm topbar-icon-collapse"
-              title={t(lang, 'quickSnapshot')}
-              onClick={onQuickSnapshot}
-            >
-              <Tag size={13} />
-              <span className="topbar-hide-narrow">{t(lang, 'quickSnapshot')}</span>
-            </button>
+            <StudioTooltip content={t(lang, 'quickSnapshot')}>
+              <Button
+                id="btn-quick-snapshot"
+                size="sm"
+                variant="ghost"
+                onClick={onQuickSnapshot}
+              >
+                <Tag size={13} />
+                <span className="hidden xl:inline">{t(lang, 'quickSnapshot')}</span>
+              </Button>
+            </StudioTooltip>
           ) : null}
 
-          <button
-            type="button"
-            className="btn btn-sm btn-icon"
-            title={lang === 'zh-CN' ? 'Switch to English' : '切换中文'}
-            onClick={onToggleLang}
-          >
-            <Languages size={14} />
-          </button>
+          <StudioTooltip content={lang === 'zh-CN' ? 'Switch to English' : '切换为简体中文'}>
+            <Button size="icon" variant="ghost" onClick={onToggleLang}>
+              <Languages size={14} />
+            </Button>
+          </StudioTooltip>
 
-          <button
-            id="btn-theme-toggle"
-            type="button"
-            className="btn btn-sm btn-icon"
-            title={uiTheme === 'dark' ? '切换浅色主题' : '切换暗色工坊主题'}
-            onClick={onToggleTheme}
+          <StudioTooltip
+            content={
+              uiTheme === 'dark'
+                ? lang === 'zh-CN'
+                  ? '切换浅色主题'
+                  : 'Switch to Light Theme'
+                : lang === 'zh-CN'
+                  ? '切换暗色主题'
+                  : 'Switch to Dark Theme'
+            }
           >
-            {uiTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
+            <Button id="btn-theme-toggle" size="icon" variant="ghost" onClick={onToggleTheme}>
+              {uiTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </Button>
+          </StudioTooltip>
 
-          <button
-            id="btn-open-settings"
-            type="button"
-            className="btn btn-sm topbar-icon-collapse"
-            title={t(lang, 'settings')}
-            onClick={onOpenSettings}
-          >
-            <Settings size={13} />
-            <span className="topbar-hide-narrow">{t(lang, 'settings')}</span>
-          </button>
+          <StudioTooltip content={t(lang, 'settings')}>
+            <Button id="btn-open-settings" size="icon" variant="ghost" onClick={onOpenSettings}>
+              <Settings size={14} />
+            </Button>
+          </StudioTooltip>
         </div>
 
         {hasCustomWindowControls ? (
