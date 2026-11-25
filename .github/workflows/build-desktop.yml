@@ -37,7 +37,12 @@ jobs:
         run: |
           git config --global user.name "CooDance CI"
           git config --global user.email "ci@coodance.local"
-          node scripts/init-project.mjs ci-smoke --demo
+          # 1. Verify zero-config demo auto-fills pre-baked Doubao 2.0 audio & passes strict EditPlan validation
+          node scripts/init-project.mjs ci-demo --demo
+          node -e 'const fs = require("node:fs"); const tl = JSON.parse(fs.readFileSync("/tmp/coodance-ci-workspace/ci-demo/build/audio_timeline.json", "utf8")); if (tl.provider !== "doubao") throw new Error("Expected bundled doubao audio, got " + tl.provider); console.log("Zero-config demo Doubao audio check passed:", tl.provider, tl.voice);'
+          node scripts/validate-edit-plan.mjs ci-demo
+          # 2. Verify full 5-stage CLI pipeline with live local TTS, asset enrichment, inspection, validation & snapshots
+          node scripts/init-project.mjs ci-smoke --demo --provider local --speed 1.05
           node scripts/tts.mjs ci-smoke --provider local --speed 1.05
           node scripts/fetch-logo.mjs ci-smoke github --name github
           node scripts/fetch-tg-emoji.mjs ci-smoke audio-bars --name audio-bars

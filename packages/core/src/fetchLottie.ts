@@ -36,52 +36,23 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
     assets: [],
   };
 
+  const easeVec = {
+    i: { x: [0.25, 0.25, 0.25], y: [1, 1, 1] },
+    o: { x: [0.45, 0.45, 0.45], y: [0, 0, 0] },
+  };
+  const easeScalar = {
+    i: { x: [0.25], y: [1] },
+    o: { x: [0.45], y: [0] },
+  };
+
   if (presetId === 'check-badge') {
     return {
       ...base,
       layers: [
+        // Layer 0 renders ON TOP in Lottie: crisp white animated checkmark stroke
         {
           ddd: 0,
           ind: 1,
-          ty: 4,
-          nm: 'CircleBg',
-          sr: 1,
-          ks: {
-            o: { a: 0, k: 100 },
-            r: { a: 0, k: 0 },
-            p: { a: 0, k: [100, 100, 0] },
-            a: { a: 0, k: [0, 0, 0] },
-            s: {
-              a: 1,
-              k: [
-                { t: 0, s: [0, 0, 100], e: [112, 112, 100] },
-                { t: 16, s: [112, 112, 100], e: [100, 100, 100] },
-                { t: 28, s: [100, 100, 100] },
-              ],
-            },
-          },
-          shapes: [
-            {
-              ty: 'el',
-              d: 1,
-              s: { a: 0, k: [144, 144] },
-              p: { a: 0, k: [0, 0] },
-              nm: 'Ellipse',
-            },
-            {
-              ty: 'fl',
-              c: { a: 0, k: [0.06, 0.72, 0.5, 1] },
-              o: { a: 0, k: 100 },
-              nm: 'Fill',
-            },
-          ],
-          ip: 0,
-          op: 90,
-          st: 0,
-        },
-        {
-          ddd: 0,
-          ind: 2,
           ty: 4,
           nm: 'CheckStroke',
           sr: 1,
@@ -112,8 +83,8 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
               e: {
                 a: 1,
                 k: [
-                  { t: 14, s: [0], e: [100] },
-                  { t: 38, s: [100] },
+                  { t: 10, s: [0], ...easeScalar },
+                  { t: 36, s: [100] },
                 ],
               },
               o: { a: 0, k: 0 },
@@ -133,13 +104,55 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
           op: 90,
           st: 0,
         },
+        // Layer 1 renders BELOW: emerald circle badge with subtle pulse
+        {
+          ddd: 0,
+          ind: 2,
+          ty: 4,
+          nm: 'CircleBg',
+          sr: 1,
+          ks: {
+            o: { a: 0, k: 100 },
+            r: { a: 0, k: 0 },
+            p: { a: 0, k: [100, 100, 0] },
+            a: { a: 0, k: [0, 0, 0] },
+            s: {
+              a: 1,
+              k: [
+                { t: 0, s: [78, 78, 100], ...easeVec },
+                { t: 18, s: [104, 104, 100], ...easeVec },
+                { t: 32, s: [100, 100, 100], ...easeVec },
+                { t: 90, s: [100, 100, 100] },
+              ],
+            },
+          },
+          shapes: [
+            {
+              ty: 'el',
+              d: 1,
+              s: { a: 0, k: [148, 148] },
+              p: { a: 0, k: [0, 0] },
+              nm: 'Ellipse',
+            },
+            {
+              ty: 'fl',
+              c: { a: 0, k: [0.3, 0.71, 0.53, 1] },
+              o: { a: 0, k: 100 },
+              nm: 'Fill',
+            },
+          ],
+          ip: 0,
+          op: 90,
+          st: 0,
+        },
       ],
     };
   }
 
   if (presetId === 'audio-bars') {
-    const xPositions = [52, 76, 100, 124, 148];
-    const phases = [0, 14, 28, 10, 22];
+    const xPositions = [48, 74, 100, 126, 152];
+    const peaks = [92, 130, 105, 136, 86];
+    const mids = [24, 38, 18, 46, 30];
     return {
       ...base,
       layers: xPositions.map((xPos, idx) => ({
@@ -156,10 +169,10 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
           s: {
             a: 1,
             k: [
-              { t: 0, s: [100, 30 + (idx % 3) * 20, 100], e: [100, 110, 100] },
-              { t: 22 + phases[idx] / 2, s: [100, 110, 100], e: [100, 35, 100] },
-              { t: 60, s: [100, 35, 100], e: [100, 95, 100] },
-              { t: 90, s: [100, 30 + (idx % 3) * 20, 100] },
+              { t: 0, s: [100, 42 + (idx % 3) * 14, 100], ...easeVec },
+              { t: mids[idx], s: [100, peaks[idx], 100], ...easeVec },
+              { t: mids[idx] + 28, s: [100, 36, 100], ...easeVec },
+              { t: 90, s: [100, 42 + (idx % 3) * 14, 100] },
             ],
           },
         },
@@ -167,14 +180,14 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
           {
             ty: 'rc',
             d: 1,
-            s: { a: 0, k: [14, 100] },
+            s: { a: 0, k: [14, 96] },
             p: { a: 0, k: [0, 0] },
             r: { a: 0, k: 7 },
             nm: 'Rect',
           },
           {
             ty: 'fl',
-            c: { a: 0, k: [0.96, 0.62, 0.04, 1] },
+            c: { a: 0, k: [0.85, 0.61, 0.15, 1] },
             o: { a: 0, k: 100 },
             nm: 'Fill',
           },
@@ -191,8 +204,8 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
       presetId === 'fire-glow'
         ? [0.97, 0.35, 0.2, 1]
         : presetId === 'rocket-launch'
-          ? [0.05, 0.65, 0.91, 1]
-          : [0.96, 0.62, 0.04, 1];
+          ? [0.4, 0.66, 0.83, 1]
+          : [0.85, 0.61, 0.15, 1];
     return {
       ...base,
       layers: [
@@ -207,7 +220,7 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
             r: {
               a: 1,
               k: [
-                { t: 0, s: [0], e: [180] },
+                { t: 0, s: [0], ...easeScalar },
                 { t: 90, s: [180] },
               ],
             },
@@ -216,9 +229,9 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
             s: {
               a: 1,
               k: [
-                { t: 0, s: [65, 65, 100], e: [115, 115, 100] },
-                { t: 45, s: [115, 115, 100], e: [65, 65, 100] },
-                { t: 90, s: [65, 65, 100] },
+                { t: 0, s: [72, 72, 100], ...easeVec },
+                { t: 45, s: [112, 112, 100], ...easeVec },
+                { t: 90, s: [72, 72, 100] },
               ],
             },
           },
@@ -259,51 +272,6 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
         ddd: 0,
         ind: 1,
         ty: 4,
-        nm: 'OuterRing',
-        sr: 1,
-        ks: {
-          o: {
-            a: 1,
-            k: [
-              { t: 0, s: [95], e: [0] },
-              { t: 89, s: [0] },
-            ],
-          },
-          r: { a: 0, k: 0 },
-          p: { a: 0, k: [100, 100, 0] },
-          a: { a: 0, k: [0, 0, 0] },
-          s: {
-            a: 1,
-            k: [
-              { t: 0, s: [35, 35, 100], e: [130, 130, 100] },
-              { t: 89, s: [130, 130, 100] },
-            ],
-          },
-        },
-        shapes: [
-          {
-            ty: 'el',
-            d: 1,
-            s: { a: 0, k: [128, 128] },
-            p: { a: 0, k: [0, 0] },
-            nm: 'Ellipse',
-          },
-          {
-            ty: 'st',
-            c: { a: 0, k: [0.96, 0.62, 0.04, 1] },
-            o: { a: 0, k: 100 },
-            w: { a: 0, k: 10 },
-            nm: 'Stroke',
-          },
-        ],
-        ip: 0,
-        op: 90,
-        st: 0,
-      },
-      {
-        ddd: 0,
-        ind: 2,
-        ty: 4,
         nm: 'CenterDot',
         sr: 1,
         ks: {
@@ -317,15 +285,60 @@ export function buildPresetLottieJson(presetId: string): Record<string, unknown>
           {
             ty: 'el',
             d: 1,
-            s: { a: 0, k: [36, 36] },
+            s: { a: 0, k: [32, 32] },
             p: { a: 0, k: [0, 0] },
             nm: 'Dot',
           },
           {
             ty: 'fl',
-            c: { a: 0, k: [0.96, 0.62, 0.04, 1] },
+            c: { a: 0, k: [0.85, 0.61, 0.15, 1] },
             o: { a: 0, k: 100 },
             nm: 'Fill',
+          },
+        ],
+        ip: 0,
+        op: 90,
+        st: 0,
+      },
+      {
+        ddd: 0,
+        ind: 2,
+        ty: 4,
+        nm: 'OuterRing',
+        sr: 1,
+        ks: {
+          o: {
+            a: 1,
+            k: [
+              { t: 0, s: [92], ...easeScalar },
+              { t: 89, s: [0] },
+            ],
+          },
+          r: { a: 0, k: 0 },
+          p: { a: 0, k: [100, 100, 0] },
+          a: { a: 0, k: [0, 0, 0] },
+          s: {
+            a: 1,
+            k: [
+              { t: 0, s: [40, 40, 100], ...easeVec },
+              { t: 89, s: [128, 128, 100] },
+            ],
+          },
+        },
+        shapes: [
+          {
+            ty: 'el',
+            d: 1,
+            s: { a: 0, k: [126, 126] },
+            p: { a: 0, k: [0, 0] },
+            nm: 'Ellipse',
+          },
+          {
+            ty: 'st',
+            c: { a: 0, k: [0.85, 0.61, 0.15, 1] },
+            o: { a: 0, k: 100 },
+            w: { a: 0, k: 10 },
+            nm: 'Stroke',
           },
         ],
         ip: 0,

@@ -15,6 +15,7 @@ export * from './snapshot.js';
 export * from './settings.js';
 export * from './aiStoryboard.js';
 export * from './projectInit.js';
+export * from './demoAssets.js';
 export * from './render.js';
 export * from './editPlanValidator.js';
 export * from './importAsset.js';
